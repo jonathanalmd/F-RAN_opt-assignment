@@ -5,6 +5,7 @@
 library(ggplot2)
 library(reshape)
 library(dplyr)
+library(plyr)
 library(tidyr)
 library(kernlab)
 set.seed(4242) 
@@ -196,60 +197,75 @@ main <- function(){
   weekday_files <- list.files("data/weekday")
   weekend_files <- list.files("data/weekend")
   
+  df_weekend <- data.frame(square_id=as.factor(factor()),
+                           cluster=as.factor(factor()), 
+                           activity_time=integer(), 
+                           internet_traffic=numeric(),
+                           stringsAsFactors=FALSE) 
+  df_weekday <- data.frame(square_id=as.factor(factor()),
+                           cluster=as.factor(factor()), 
+                           activity_time=integer(), 
+                           internet_traffic=numeric(),
+                           stringsAsFactors=FALSE) 
+  
+  
+  file_type = "weekend"
   for(file in weekend_files){
     print(file)
+    
+    full_dir <- paste('data/',file_type,'/',file,sep="")
+    df_full <- cleanData(full_dir)
+    
+    #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
+    df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
+    
+    # aggregate squares and insert xy columns
+    df_internet_ag_sum <- aggragateTrafficXY(df_internet_full)
+    
+    # elbow test
+    elbowTest(df_internet_ag_sum)
+    
+    # clustering
+    nclusters <- 4
+    
+    # Full Map
+    df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
+    # plot heat map
+    plotHeatMap(df_internet_ag_sum)
+    # Barplot
+    df_internet_full_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_clustered)
+    barplotActivityCluster(df_internet_full_clustered, nclusters)
+    # Boxplot (normalized)
+    df_internet_full_clustered_norm <- df_internet_full_clustered
+    df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
+    boxplotActivityCluster(df_internet_full_clustered_norm, nclusters)
+    
+    # Milano Map
+    x_max <- 76
+    x_min <- 33
+    y_max <- 75
+    y_min <- 38
+    df_internet_ag_sum_milano <- subMap(df_internet_ag_sum, x_max, x_min, y_max, y_min)
+    # plot heat map
+    plotHeatMap(df_internet_ag_sum_milano)
+    #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
+    df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters)
+    
+    # Barplot
+    df_internet_milano_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_milano_clustered)
+    barplotActivityCluster(df_internet_milano_clustered, nclusters)
+    # Boxplot (normalized)
+    df_internet_milano_clustered_norm <- df_internet_milano_clustered
+    df_internet_milano_clustered_norm$internet_traffic <- normalize(df_internet_milano_clustered$internet_traffic)
+    boxplotActivityCluster(df_internet_milano_clustered_norm, nclusters)
+    
+    
+    df_weekend <- rbind(df_weekend, df_internet_milano_clustered_norm)
+    #ddply(merge(df_aux, df_internet_milano_clustered_norm, all.x=TRUE), 
+    #      .(square_id, cluster, activity_time), summarise, ACTION=sum(internet_traffic))
   }
-  file_type = "weekday"
-  file_name = "sms-call-internet-mi-2013-11-29.txt"
   
-  full_dir <- paste('data/',file_type,'/',file_name,sep="")
-  df_full <- cleanData(full_dir)
-  
-  #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
-  df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
-  
-  # aggregate squares and insert xy columns
-  df_internet_ag_sum <- aggragateTrafficXY(df_internet_full)
-  
-  # elbow test
-  elbowTest(df_internet_ag_sum)
-  
-  # clustering
-  nclusters <- 4
-  
-  # Full Map
-  df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
-  # plot heat map
-  plotHeatMap(df_internet_ag_sum)
-  # Barplot
-  df_internet_full_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_clustered)
-  barplotActivityCluster(df_internet_full_clustered, nclusters)
-  # Boxplot (normalized)
-  df_internet_full_clustered_norm <- df_internet_full_clustered
-  df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
-  boxplotActivityCluster(df_internet_full_clustered_norm, nclusters)
-  
-  # Milano Map
-  x_max <- 76
-  x_min <- 33
-  y_max <- 75
-  y_min <- 38
-  df_internet_ag_sum_milano <- subMap(df_internet_ag_sum, x_max, x_min, y_max, y_min)
-  # plot heat map
-  plotHeatMap(df_internet_ag_sum_milano)
-  #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
-  df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters)
-  
-  # Barplot
-  df_internet_milano_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_milano_clustered)
-  barplotActivityCluster(df_internet_milano_clustered, nclusters)
-  # Boxplot (normalized)
-  df_internet_milano_clustered_norm <- df_internet_milano_clustered
-  df_internet_milano_clustered_norm$internet_traffic <- normalize(df_internet_milano_clustered$internet_traffic)
-  boxplotActivityCluster(df_internet_milano_clustered_norm, nclusters)
-  
-  
-
+  df_weekend
 }
 
 
