@@ -7,6 +7,7 @@ library(reshape)
 library(dplyr)
 library(tidyr)
 library(kernlab)
+set.seed(4242) 
 ###################################################
 # Basic functions
 
@@ -27,9 +28,9 @@ normalize <- function(x){
 
 
 
-cleanData <- function(data_type, file_name, file_ext){
+cleanData <- function(input_dir){
   # Get data
-  cdr_input <- read.csv(paste('data/',data_type,'/',file_name,'.',file_ext,sep=""),sep="\t",header=F)
+  cdr_input <- read.csv(input_dir,sep="\t",header=F)
   head(cdr_input)
   summary(cdr_input)
   
@@ -153,8 +154,8 @@ applyKmeans <- function(df, nclusters){
 
 mergeClusterActivityTime <- function(df_full, df_cluster){
   # add activity time
-  subdf <- subset(df_full,select=c("square_id","activity_time","total_activity"))
-  subdf <- aggregate(total_activity ~ square_id + activity_time, subdf, FUN=sum)
+  subdf <- subset(df_full,select=c("square_id","activity_time","internet_traffic"))
+  subdf <- aggregate(internet_traffic ~ square_id + activity_time, subdf, FUN=sum)
   
   return (merge(subset(df_cluster, select=c("square_id","cluster")), subdf, by=c("square_id")))
 }
@@ -167,8 +168,8 @@ normalizeActivity <- function(df){
 barplotActivityCluster <- function(df, nclusters){
   for(i in 1:nclusters){
     activityCluster <- df %>% filter(cluster == i)
-    ggplot(aggregate(total_activity ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(activityCluster))) + 
-      geom_bar(stat="identity")
+    print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic/nrow(activityCluster))) + 
+      geom_bar(stat="identity"))
   }
 }
 
@@ -176,27 +177,33 @@ barplotActivityCluster <- function(df, nclusters){
 boxplotActivityCluster <- function(df, nclusters, facet = TRUE){
   for(i in 1:nclusters){
     activityCluster <- df %>% filter(cluster == i)
-    ggplot(data=activityCluster, aes(x=activity_time, y=total_activity)) +
-      geom_boxplot()
+    print(ggplot(data=activityCluster, aes(x=activity_time, y=internet_traffic)) +
+      geom_boxplot())
   }
   
   if(facet){
     # Boxplot + Clusters normalized with facet
-    ggplot(data=df, aes(x=activity_time, y=total_activity)) +
+    print(ggplot(data=df, aes(x=activity_time, y=internet_traffic)) +
       geom_boxplot() +
-      facet_grid(rows = vars(cluster))
+      facet_grid(rows = vars(cluster)))
   }
 }
-
 
 
 main <- function(){
   # Set directory
   set_wdir()
-  data_type = "weekday"
-  file_name = "sms-call-internet-mi-2013-11-11"
-  file_ext = "txt"
-  df_full <- cleanData(data_type, file_name, file_ext)
+  weekday_files <- list.files("data/weekday")
+  weekend_files <- list.files("data/weekend")
+  
+  for(file in weekend_files){
+    print(file)
+  }
+  file_type = "weekday"
+  file_name = "sms-call-internet-mi-2013-11-29.txt"
+  
+  full_dir <- paste('data/',file_type,'/',file_name,sep="")
+  df_full <- cleanData(full_dir)
   
   #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
   df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
@@ -208,27 +215,41 @@ main <- function(){
   elbowTest(df_internet_ag_sum)
   
   # clustering
-  full_map <- TRUE
   nclusters <- 4
-  if(full_map){
-    # plot heat map
-    plotHeatMap(df_internet_ag_sum)
-    
-    df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
-  }else{
-    x_max <- 76
-    x_min <- 33
-    y_max <- 75
-    y_min <- 38
-    df_internet_ag_sum_milano <- subMap(df_internet_ag_sum, x_max, x_min, y_max, y_min)
-    
-    # plot heat map
-    plotHeatMap(df_internet_ag_sum_milano)
-    set.seed(4242) 
-    #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
-    df_internet_ag_sum_clustered_milano_kmeans <- applyKmeans(df_internet_ag_sum_milano, nclusters)
-  }
   
+  # Full Map
+  df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
+  # plot heat map
+  plotHeatMap(df_internet_ag_sum)
+  # Barplot
+  df_internet_full_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_clustered)
+  barplotActivityCluster(df_internet_full_clustered, nclusters)
+  # Boxplot (normalized)
+  df_internet_full_clustered_norm <- df_internet_full_clustered
+  df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
+  boxplotActivityCluster(df_internet_full_clustered_norm, nclusters)
+  
+  # Milano Map
+  x_max <- 76
+  x_min <- 33
+  y_max <- 75
+  y_min <- 38
+  df_internet_ag_sum_milano <- subMap(df_internet_ag_sum, x_max, x_min, y_max, y_min)
+  # plot heat map
+  plotHeatMap(df_internet_ag_sum_milano)
+  #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
+  df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters)
+  
+  # Barplot
+  df_internet_milano_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_milano_clustered)
+  barplotActivityCluster(df_internet_milano_clustered, nclusters)
+  # Boxplot (normalized)
+  df_internet_milano_clustered_norm <- df_internet_milano_clustered
+  df_internet_milano_clustered_norm$internet_traffic <- normalize(df_internet_milano_clustered$internet_traffic)
+  boxplotActivityCluster(df_internet_milano_clustered_norm, nclusters)
+  
+  
+
 }
 
 
@@ -236,240 +257,4 @@ main <- function(){
 
 
 
-
-
-
-
-# total area - 3 clusters
-
-
-
-
-subdf <- subset(cdr_input_subset_df_cln,select=c("square_id","total_activity"))
-
-df_milano <- aggregate(total_activity ~ square_id, subdf, FUN=sum)
-df_milano$x <- floor(as.numeric(df_milano$square_id)/100)
-df_milano$y <- as.numeric(df_milano$square_id) %% 100
-# df_milano <- filter(df_milano, (x > 45 & y > 37) & (x < 73 & y < 64))
-# df_milano <- filter(df_milano, (x > 32 & y > 37) & (x < 75 & y < 74))
-#df_milano <- filter(df_milano, (x > 33 & y > 38) & (x < 76 & y < 75))
-#df_milano <- filter(df_milano, (x > 33 & y > 44) & (x < 76 & y < 81))
-
-
-
-# find number of clusters
-# subset the required columns
-cdrActivityDF <- df_milano
-
-
-# find the vector of sum of squared error(SSE) for each cluster selection
-wcss <- vector()
-for(i in 1:20) wcss[i] = sum(kmeans(cdrActivityDF,i)$withinss)
-clusterFrame <- data.frame(withinss=wcss,Cluster=seq(1:20))
-
-# plot the result and selects the optimal cluster number by looking at the graph. When number of cluster increases then the SSE will be reduced.
-ggplot(data=clusterFrame, aes(x=Cluster, y=withinss, group=1)) + geom_line(colour="red", size=1.5) + geom_point(colour="red", size=4, shape=21, fill="white")+theme_bw()
-
-
-
-# applying k-means on acitivity hours and total_activity - using clusters
-cdrClusterModel <- kmeans(cdrActivityDF,3,nstart=10)
-#cdrClusterModel <- kmeans(cdrActivityDF,10,nstart=10)
-
-print(summary(cdrClusterModel))
-
-# Append the identified cluster to the input dataframe
-cdrActivityDF$cluster <- as.factor(cdrClusterModel$cluster)
-cdrActivityDF$square_id <- as.factor(cdrActivityDF$square_id)
-
-
-
-# heatmap
-p <- ggplot(cdrActivityDF, aes(x,y, fill=total_activity))
-p + geom_tile()
-
-# clustered map
-p <- ggplot(cdrActivityDF, aes(x,y))
-p + geom_point(aes(colour=cluster))
-
-
-
-
-
-subdf <- subset(cdr_input_subset_df_cln,select=c("square_id","activity_time","total_activity"))
-subdf <- aggregate(total_activity ~ square_id + activity_time, subdf, FUN=sum)
-cdrActivityDF_time <-  merge(subset(cdrActivityDF, select=c("square_id","cluster")), subdf, by=c("square_id"))
-
-
-
-#square1DF = cdrActivityDF %>% filter(x == 44 & y == 44)
-#totalSquare1ActivityPlot = ggplot(data=square1DF, aes(x=activity_time, y=total_activity)) + geom_bar(stat="identity")+theme_bw()
-#print(totalSquare1ActivityPlot)
-
-
-cdrActivityDFC1 = cdrActivityDF_time %>% filter(cluster == 1)
-cdrActivityDFC2 = cdrActivityDF_time %>% filter(cluster == 2)
-cdrActivityDFC3 = cdrActivityDF_time %>% filter(cluster == 3)
-
-
-totalActivityPlot <- ggplot(aggregate(total_activity ~ activity_time,cdrActivityDFC1 ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(cdrActivityDFC1))) + geom_bar(stat="identity")+theme_bw()
-print(totalActivityPlot)
-
-totalActivityPlot <- ggplot(aggregate(total_activity ~ activity_time,cdrActivityDFC2 ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(cdrActivityDFC2))) + geom_bar(stat="identity")+theme_bw()
-print(totalActivityPlot)
-
-totalActivityPlot <- ggplot(aggregate(total_activity ~ activity_time,cdrActivityDFC3 ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(cdrActivityDFC3))) + geom_bar(stat="identity")+theme_bw()
-print(totalActivityPlot)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# milano area - 4 clusters
-
-
-
-
-subdf <- subset(cdr_input_subset_df_cln,select=c("square_id","total_activity"))
-
-df_milano <- aggregate(total_activity ~ square_id, subdf, FUN=sum)
-df_milano$x <- floor(as.numeric(df_milano$square_id)/100)
-df_milano$y <- as.numeric(df_milano$square_id) %% 100
-# df_milano <- filter(df_milano, (x > 45 & y > 37) & (x < 73 & y < 64))
-# df_milano <- filter(df_milano, (x > 32 & y > 37) & (x < 75 & y < 74))
-df_milano <- filter(df_milano, (x > 33 & y > 38) & (x < 76 & y < 75))
-#df_milano <- filter(df_milano, (x > 33 & y > 44) & (x < 76 & y < 81))
-
-
-
-# find number of clusters
-# subset the required columns
-cdrActivityDF <- df_milano
-
-
-# find the vector of sum of squared error(SSE) for each cluster selection
-wcss <- vector()
-for(i in 1:20) wcss[i] = sum(kmeans(cdrActivityDF,i)$withinss)
-clusterFrame <- data.frame(withinss=wcss,Cluster=seq(1:20))
-
-# plot the result and selects the optimal cluster number by looking at the graph. When number of cluster increases then the SSE will be reduced.
-ggplot(data=clusterFrame, aes(x=Cluster, y=withinss, group=1)) + geom_line(colour="red", size=1.5) + geom_point(colour="red", size=4, shape=21, fill="white")+theme_bw()
-
-
-
-# applying k-means on acitivity hours and total_activity - using clusters
-#  K-means, as a data-clustering algorithm, is ideal for discovering globular clusters 
-# where all members of each cluster are in close proximity to each other (in the Euclidean sense)
-cdrClusterModel <- kmeans(cdrActivityDF,4,nstart=10)
-specDF <- subset(cdrActivityDF,select=c("total_activity","x","y"))
-specDF <- as.matrix(specDF)
-cdrClusterModel <- specc(specDF,  kernel = "rbfdot", kpar = "automatic", centers=4)
-#cdrClusterModel <- kmeans(cdrActivityDF,10,nstart=10)
-
-print(summary(cdrClusterModel))
-
-# Append the identified cluster to the input dataframe
-# cdrActivityDF$cluster <- as.factor(cdrClusterModel$cluster)
-cdrActivityDF$square_id <- as.factor(cdrActivityDF$square_id)
-cdrActivityDF$cluster <- as.factor(cdrClusterModel)
-
-
-
-
-p <- ggplot(cdrActivityDF, aes(x,y))
-p + geom_point(aes(colour=cluster),size = 5)
-
-p <- ggplot(cdrActivityDF, aes(x,y, fill=total_activity))
-p + geom_tile()
-
-
-
-
-
-subdf <- subset(cdr_input_subset_df_cln,select=c("square_id","activity_time","total_activity"))
-subdf <- aggregate(total_activity ~ square_id + activity_time, subdf, FUN=sum)
-cdrActivityDF_time <-  merge(subset(cdrActivityDF, select=c("square_id","cluster")), subdf, by=c("square_id"))
-
-
-# Normalize
-plot_normalized = TRUE
-norm_cdrActivityDF_time <- cdrActivityDF_time
-norm_cdrActivityDF_time$total_activity <- normalize(norm_cdrActivityDF_time$total_activity)
-#scaled_cdrActivityDF_time$total_activity <- scale(cdrActivityDF_time$total_activity)
-#colMeans(scaled_cdrActivityDF_time$total_activity)
-#apply(scaled_cdrActivityDF_time$total_activity$total_activity, 2, sd)
-
-
-
-#square1DF = cdrActivityDF %>% filter(x == 44 & y == 44)
-#totalSquare1ActivityPlot = ggplot(data=square1DF, aes(x=activity_time, y=total_activity)) + geom_bar(stat="identity")+theme_bw()
-#print(totalSquare1ActivityPlot)
-
-
-
-cdrActivityDFC1 = cdrActivityDF_time %>% filter(cluster == 1)
-cdrActivityDFC2 = cdrActivityDF_time %>% filter(cluster == 2)
-cdrActivityDFC3 = cdrActivityDF_time %>% filter(cluster == 3)
-cdrActivityDFC4 = cdrActivityDF_time %>% filter(cluster == 4)
-
-
-if(plot_normalized){
-  cdrActivityDF_time <- norm_cdrActivityDF_time  
-  
-  totalActivityPlot <- ggplot(data=cdrActivityDFC1, aes(x=activity_time, y=total_activity)) +
-    geom_boxplot()
-  print(totalActivityPlot)
-  
-  
-  totalActivityPlot <- ggplot(data=cdrActivityDFC2, aes(x=activity_time, y=total_activity)) +
-    geom_boxplot()
-  print(totalActivityPlot)
-  
-  
-  totalActivityPlot <- ggplot(data=cdrActivityDFC3, aes(x=activity_time, y=total_activity)) +
-    geom_boxplot()
-  print(totalActivityPlot)
-  
-  
-  totalActivityPlot <- ggplot(data=cdrActivityDFC4, aes(x=activity_time, y=total_activity)) +
-    geom_boxplot()
-  print(totalActivityPlot)
-  
-  # Boxplot 
-  # ggplot(data=cdrActivityDF_time, aes(x=activity_time, y=total_activity)) +
-  #   geom_boxplot(aes(fill=cluster))
-  
-  
-  # Boxplot + Clusters normalized with facet
-  ggplot(data=norm_cdrActivityDF_time, aes(x=activity_time, y=total_activity)) +
-    geom_boxplot() +
-    facet_grid(rows = vars(cluster))
-  
-} else{
-  totalActivityPlot <- ggplot(aggregate(total_activity ~ activity_time,cdrActivityDFC1 ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(cdrActivityDFC1))) + 
-    geom_bar(stat="identity")
-  print(totalActivityPlot)
-  
-  totalActivityPlot <- ggplot(aggregate(total_activity ~ activity_time,cdrActivityDFC2 ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(cdrActivityDFC2))) +
-    geom_bar(stat="identity")
-  print(totalActivityPlot)
-  
-  totalActivityPlot <- ggplot(aggregate(total_activity ~ activity_time,cdrActivityDFC3 ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(cdrActivityDFC3))) +
-    geom_bar(stat="identity")
-  print(totalActivityPlot)
-  
-  totalActivityPlot <- ggplot(aggregate(total_activity ~ activity_time,cdrActivityDFC4 ,FUN=sum), aes(x=activity_time, y=total_activity/nrow(cdrActivityDFC4))) +
-    geom_bar(stat="identity")
-  print(totalActivityPlot)
-}
 
