@@ -72,7 +72,7 @@ function [vec, fval, answer, resume, n_ismt, output_a] = opt_assignment(scenario
                     if n_ismt(i,s,m,t) > 0
                         A(ihead, navA(i,s,m,t)) = n_ismt(i,s,m,t);
                     else
-                        A(ihead, navA(i,s,m,t)) = 99999999;
+                        A(ihead, navA(i,s,m,t)) = -99999999;
                     end
                 end
                 % % A(ihead, navA(i,s,t)) = -(P_is(i,s) * N_is(i,s) * Ef_is(i,s));
@@ -83,7 +83,13 @@ function [vec, fval, answer, resume, n_ismt, output_a] = opt_assignment(scenario
                 %A(ihead, navA(i,s,t)) = -(P_is * N_is * Ef_is);
                 % A(ihead, navA(i,s,t)) = -(P_is * Ef_is);
                 % b(ihead) = 0;
-                b(ihead) = scenario.mdcs(s).vms(i).n_cores * 10;
+                
+                % b(ihead) = scenario.mdcs(s).vms(i).n_cores; % * number of processors
+                if s < 8
+                    b(ihead) = scenario.mdcs(s).vms(i).n_cores * 2; % * number of processors
+                else
+                    b(ihead) = scenario.mdcs(s).vms(i).n_cores * 8; % * number of processors
+                end
                 ihead = ihead + 1;
             end
         end
@@ -184,6 +190,7 @@ function [vec, fval, answer, resume, n_ismt, output_a] = opt_assignment(scenario
             for m = 1:M
                 for t = 1:T
                     f(navA(i,s,m,t)) = n_ismt(i,s,m,t) * scenario.mdcs(s).vms(i).price; %/ (scenario.d_sm(s,m)); % * 1000);
+                    
                     % f(navA(i,s,t)) = scenario.mdcs(s).vms(i).price;
                     % Migration
                     % for m = 1:M

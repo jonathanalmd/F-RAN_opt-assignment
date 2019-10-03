@@ -8,7 +8,7 @@ classdef Scenario
     properties
         %% Basic problem inputs
         % Number of sites (hexagons) -- Scenario length
-        n_sites = 6; % 7
+        n_sites = 7; % 7
         % Time slots
         T = 24; % 
 
@@ -30,7 +30,7 @@ classdef Scenario
         %% MDCs    
         % https://www.ec2instances.info/?selected=a1.medium,c4.8xlarge
         % Number of machine classes
-        I = 3;
+        I = 2;
         % Number of MDC's
         % S_macrocell = n_sites * mc_antennas_per_site % one MDC per MC antenna
         S_macrocell;
@@ -178,6 +178,11 @@ classdef Scenario
             mi2 = 30;
             sigma2 = 20;
             
+%             mi1 = 150;
+%             sigma1 = 130;
+%             mi2 = 150;
+%             sigma2 = 130;
+%             
             obj.transmited_data_mt = obj.antennaSaturationNorm(mi1,sigma1,mi2,sigma2);
             % Workload = transmited_data_mt * W
                         
