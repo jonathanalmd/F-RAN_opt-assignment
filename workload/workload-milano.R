@@ -8,7 +8,9 @@ library(dplyr)
 library(plyr)
 library(tidyr)
 library(kernlab)
-set.seed(4242) 
+library(ggsci)
+
+set.seed(73) 
 ###################################################
 # Basic functions
 
@@ -138,7 +140,7 @@ applySpectralClustering <- function(df, nclusters){
   return (df)
 }
 
-applyKmeans <- function(df, nclusters){
+applyKmeans <- function(df, nclusters, psize = 2){
   kmeansModel <- kmeans(df,nclusters,nstart=10)
   print(summary(kmeansModel))
   
@@ -148,7 +150,7 @@ applyKmeans <- function(df, nclusters){
   
   # clustered map
   p <- ggplot(df, aes(x,y))
-  print(p + geom_point(aes(colour=cluster), size=3))
+  print(p + geom_point(aes(colour=cluster), size=psize) + scale_color_npg())#scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
   
   return(df)
 }
@@ -250,7 +252,7 @@ initialCleaning <- function(){
 }
 
 runAnalysis <- function(df_full){
-  df_full<-df_weekday_full
+  # df_full<-df_weekday_full
   
   df_full$activity_time <- as.factor(df_full$activity_time)
   #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
@@ -297,7 +299,7 @@ runAnalysis <- function(df_full){
   
   
   # Milano Map
-  nclusters <- 4
+  nclusters <- 5
   x_max <- 75
   x_min <- 35
   y_max <- 80
@@ -306,7 +308,7 @@ runAnalysis <- function(df_full){
   # plot heat map
   plotHeatMap(df_internet_ag_sum_milano)
   #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
-  df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters)
+  df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters, psize = 6)
   
   # Barplot (not normalized)
   df_internet_milano_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_milano_clustered)
@@ -321,14 +323,6 @@ runAnalysis <- function(df_full){
   df_internet_milano_sum_clustered$internet_traffic <- normalize(df_internet_milano_sum_clustered$internet_traffic)
   barplotActivityCluster(df_internet_milano_sum_clustered, nclusters, divide=FALSE)
   
-  
-  for(i in 1:nclusters){
-    subdf <- subset(filter(df_internet_full_sum_clustered, cluster == i), select=c("activity_time","internet_traffic"))
-    subdf_summary <- subset(filter(df_internet_full_clustered_norm, cluster == i), select=c("activity_time","internet_traffic"))
-    mean_sd <- aggregate(internet_traffic ~ activity_time, subdf_summary,  function(x) c(mean = mean(x), sd = sd(x)))
-    write.csv(subdf, file = paste("fullmap_cluster",i,".csv", sep=""))
-    write.csv(mean_sd, file = paste("fullmap_cluster",i,"-summary.csv", sep=""))
-  }
   
   for(i in 1:nclusters){
     write.csv(subset(filter(df_internet_milano_sum_clustered, cluster == 1), select=c("activity_time","internet_traffic")), file = paste("milano_cluster",i,".csv", sep=""))
