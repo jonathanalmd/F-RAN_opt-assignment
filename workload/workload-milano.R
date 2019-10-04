@@ -83,8 +83,9 @@ aggragateTrafficXY <- function(df){
   df <- subset(df,select=c("square_id","internet_traffic"))
   
   df <- aggregate(internet_traffic ~ square_id, df, FUN=sum)
-  df$x <- floor(as.numeric(df$square_id)/100)
-  df$y <- as.numeric(df$square_id) %% 100
+  df$square_id <- as.numeric(df$square_id) - 1
+  df$x <- floor(as.numeric(df$square_id)/100) 
+  df$y <- as.numeric(df$square_id) %% 100 
   
   return (df)
 }
@@ -132,7 +133,7 @@ applySpectralClustering <- function(df, nclusters){
   
   # clustered map
   p <- ggplot(df, aes(x,y))
-  print(p + geom_point(aes(colour=cluster)))
+  print(p + geom_point(aes(colour=cluster), size=3))
   
   return (df)
 }
@@ -147,7 +148,7 @@ applyKmeans <- function(df, nclusters){
   
   # clustered map
   p <- ggplot(df, aes(x,y))
-  print(p + geom_point(aes(colour=cluster)))
+  print(p + geom_point(aes(colour=cluster), size=3))
   
   return(df)
 }
@@ -165,16 +166,26 @@ normalizeActivity <- function(df){
   return (df)
 }
 
-barplotActivityCluster <- function(df, nclusters){
-  for(i in 1:nclusters){
-    activityCluster <- df %>% filter(cluster == i)
-    print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic/nrow(activityCluster))) + 
-      geom_bar(stat="identity"))
+barplotActivityCluster <- function(df, nclusters, divide = TRUE){
+  if(divide){
+    for(i in 1:nclusters){
+      activityCluster <- df %>% filter(cluster == i)
+      print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic/nrow(activityCluster))) + 
+              geom_bar(stat="identity"))
+    }
+  }else{
+    for(i in 1:nclusters){
+      activityCluster <- df %>% filter(cluster == i)
+      print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic)) + 
+              geom_bar(stat="identity"))
+    }
   }
+  
 }
 
 
 boxplotActivityCluster <- function(df, nclusters, facet = TRUE){
+  
   for(i in 1:nclusters){
     activityCluster <- df %>% filter(cluster == i)
     print(ggplot(data=activityCluster, aes(x=activity_time, y=internet_traffic)) +
@@ -189,15 +200,15 @@ boxplotActivityCluster <- function(df, nclusters, facet = TRUE){
   }
 }
 
+getMeanPerTime <- function(df, nclusters){
+  return (aggregate(internet_traffic ~ activity_time + cluster,df ,FUN=mean))
+}
 
-main <- function(){
-  # Set directory
-  set_wdir()
+initialCleaning <- function(){
   
   weekday_files <- list.files("data/weekday")
   weekend_files <- list.files("data/weekend")
   
-  clean <- FALSE
   if(clean){
     file_type = "weekday"
     df_weekday_full_raw <- read.csv(paste('data/',file_type,'/',weekday_files[1],sep=""),sep="\t",header=F)
@@ -208,7 +219,7 @@ main <- function(){
       
       cdr_input <- read.csv(full_dir,sep="\t",header=F)
       
-      rbind(df_weekday_full_raw, cdr_input)
+      df_weekday_full_raw <- rbind(df_weekday_full_raw, cdr_input)
       
     }
     
@@ -226,7 +237,7 @@ main <- function(){
       
       cdr_input <- read.csv(full_dir,sep="\t",header=F)
       
-      rbind(df_weekend_full_raw, cdr_input)
+      df_weekend_full_raw <- rbind(df_weekend_full_raw, cdr_input)
       
     }
     
@@ -236,15 +247,12 @@ main <- function(){
     write.csv(df_full, file = "weekend_cln.csv")
     
   }
-  
-  df_full <- read.csv("data/weekday_cln.csv",sep=",",header=T)
-  
-  
-  df_full <- read.csv("data/weekend_cln.csv",sep=",",header=T)
-  
+}
+
+runAnalysis <- function(df_full){
+  df_full<-df_weekday_full
   
   df_full$activity_time <- as.factor(df_full$activity_time)
-  
   #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
   # df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
   df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
@@ -259,9 +267,11 @@ main <- function(){
   nclusters <- 5
   
   # Full Map
-  df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
   # plot heat map
   plotHeatMap(df_internet_ag_sum)
+  # Clustering
+  df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
+  
   # Barplot
   df_internet_full_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_clustered)
   barplotActivityCluster(df_internet_full_clustered, nclusters)
@@ -269,6 +279,22 @@ main <- function(){
   df_internet_full_clustered_norm <- df_internet_full_clustered
   df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
   boxplotActivityCluster(df_internet_full_clustered_norm, nclusters)
+  
+  # Barplot (normalized)
+  df_internet_full_sum_clustered <- getMeanPerTime(df_internet_full_clustered, nclusters)
+  df_internet_full_sum_clustered$internet_traffic <- normalize(df_internet_full_sum_clustered$internet_traffic)
+  barplotActivityCluster(df_internet_full_sum_clustered, nclusters, divide=FALSE)
+  
+
+  subdf <- subset(filter(df_internet_full_clustered_norm, cluster == 1), select=c("activity_time","internet_traffic"))
+
+  
+  
+  for(i in 1:nclusters){
+    write.csv(subset(filter(df_internet_full_sum_clustered, cluster == i), select=c("activity_time","internet_traffic")), file = paste("fullmap_cluster",i,".csv", sep=""))
+    write.csv(mean_sd <- aggregate(internet_traffic ~ activity_time, subset(filter(df_internet_full_clustered_norm, cluster == i), select=c("activity_time","internet_traffic")),  function(x) c(mean = mean(x), sd = sd(x))), file = paste("fullmap_cluster",i,"-summary.csv", sep=""))
+  }
+  
   
   # Milano Map
   nclusters <- 4
@@ -282,7 +308,7 @@ main <- function(){
   #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
   df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters)
   
-  # Barplot
+  # Barplot (not normalized)
   df_internet_milano_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_milano_clustered)
   barplotActivityCluster(df_internet_milano_clustered, nclusters)
   # Boxplot (normalized)
@@ -290,9 +316,40 @@ main <- function(){
   df_internet_milano_clustered_norm$internet_traffic <- normalize(df_internet_milano_clustered$internet_traffic)
   boxplotActivityCluster(df_internet_milano_clustered_norm, nclusters)
   
+  # Barplot (normalized)
+  df_internet_milano_sum_clustered <- getMeanPerTime(df_internet_milano_clustered, nclusters)
+  df_internet_milano_sum_clustered$internet_traffic <- normalize(df_internet_milano_sum_clustered$internet_traffic)
+  barplotActivityCluster(df_internet_milano_sum_clustered, nclusters, divide=FALSE)
   
   
+  for(i in 1:nclusters){
+    subdf <- subset(filter(df_internet_full_sum_clustered, cluster == i), select=c("activity_time","internet_traffic"))
+    subdf_summary <- subset(filter(df_internet_full_clustered_norm, cluster == i), select=c("activity_time","internet_traffic"))
+    mean_sd <- aggregate(internet_traffic ~ activity_time, subdf_summary,  function(x) c(mean = mean(x), sd = sd(x)))
+    write.csv(subdf, file = paste("fullmap_cluster",i,".csv", sep=""))
+    write.csv(mean_sd, file = paste("fullmap_cluster",i,"-summary.csv", sep=""))
+  }
   
+  for(i in 1:nclusters){
+    write.csv(subset(filter(df_internet_milano_sum_clustered, cluster == 1), select=c("activity_time","internet_traffic")), file = paste("milano_cluster",i,".csv", sep=""))
+    write.csv(aggregate(internet_traffic ~ activity_time, subset(filter(df_internet_full_clustered_norm, cluster == i), select=c("activity_time","internet_traffic")),  function(x) c(mean = mean(x), sd = sd(x))), file = paste("milano_cluster",i,"-summary.csv", sep=""))
+  }
+  
+}
+
+main <- function(){
+  # Set directory
+  set_wdir()
+  clean <- FALSE
+  
+  if(clean){
+    initialCleaning()
+  }
+  
+  df_weekday_full <- read.csv("data/cleaned/week/weekday_cln_week.csv",sep=",",header=T)
+  runAnalysis(df_weekday_full)
+  df_weekend_full <- read.csv("data/weekend_cln.csv",sep=",",header=T)
+  runAnalysis(df_weekend_full)
   
   
 }
