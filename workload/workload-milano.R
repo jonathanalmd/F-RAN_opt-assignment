@@ -29,19 +29,21 @@ normalize <- function(x){
 
 
 
-cleanData <- function(input_dir){
+cleanData <- function(cdr_input){
   # Get data
-  cdr_input <- read.csv(input_dir,sep="\t",header=F)
-  head(cdr_input)
-  summary(cdr_input)
-  
-  
-  # Rename col names
+  # cdr_input <- read.csv(input_dir,sep="\t",header=F)
+  # head(cdr_input)
+  # summary(cdr_input)
+  # 
+  # 
+  # # Rename col names
   colnames(cdr_input) <- c("square_id","time_interval","country_code","sms_in","sms_out","call_in","call_out","internet_traffic")
   
   cdr_input_subset_df <- cdr_input
-  head(cdr_input_subset_df)
+  #head(cdr_input_subset_df)
   
+  # filter NAs from internet_traffic column 
+  cdr_input_subset_df <- cdr_input_subset_df[!is.na(cdr_input_subset_df$internet_traffic),]
   
   cdr_input_subset_df_cln <- cdr_input_subset_df%>% group_by(country_code) %>%mutate(sms_in = ifelse(is.na(sms_in),as.integer(mean(sms_in, na.rm = TRUE)), sms_in))
   cdr_input_subset_df_cln  <- cdr_input_subset_df_cln %>% mutate(sms_in = ifelse(is.na(sms_in),0, sms_in))
@@ -72,9 +74,6 @@ cleanData <- function(input_dir){
   
   # derive total activity from sms in and out, call in and out and internet traffic activity 
   cdr_input_subset_df_cln$total_activity <- rowSums(cdr_input_subset_df_cln[, c(4,5,6,7,8)],na.rm=T)
-  
-  # filter NAs from internet_traffic column 
-  cdr_input_subset_df_cln <- cdr_input_subset_df_cln[!is.na(cdr_input_subset_df_cln$internet_traffic),]
   
   return (cdr_input_subset_df_cln)
 }
@@ -194,83 +193,164 @@ boxplotActivityCluster <- function(df, nclusters, facet = TRUE){
 main <- function(){
   # Set directory
   set_wdir()
+  
   weekday_files <- list.files("data/weekday")
   weekend_files <- list.files("data/weekend")
   
-  df_weekend <- data.frame(square_id=as.factor(factor()),
-                           cluster=as.factor(factor()), 
-                           activity_time=integer(), 
-                           internet_traffic=numeric(),
-                           stringsAsFactors=FALSE) 
-  df_weekday <- data.frame(square_id=as.factor(factor()),
-                           cluster=as.factor(factor()), 
-                           activity_time=integer(), 
-                           internet_traffic=numeric(),
-                           stringsAsFactors=FALSE) 
-  
-  
-  file_type = "weekend"
-  for(file in weekend_files){
-    print(file)
+  clean <- FALSE
+  if(clean){
+    file_type = "weekday"
+    df_weekday_full_raw <- read.csv(paste('data/',file_type,'/',weekday_files[1],sep=""),sep="\t",header=F)
+    for(file in weekday_files[-1]){
+      print(file)
+      
+      full_dir <- paste('data/',file_type,'/',file,sep="")
+      
+      cdr_input <- read.csv(full_dir,sep="\t",header=F)
+      
+      rbind(df_weekday_full_raw, cdr_input)
+      
+    }
     
-    full_dir <- paste('data/',file_type,'/',file,sep="")
-    df_full <- cleanData(full_dir)
-    
-    #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
-    df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
-    
-    # aggregate squares and insert xy columns
-    df_internet_ag_sum <- aggragateTrafficXY(df_internet_full)
-    
-    # elbow test
-    elbowTest(df_internet_ag_sum)
-    
-    # clustering
-    nclusters <- 4
-    
-    # Full Map
-    df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
-    # plot heat map
-    plotHeatMap(df_internet_ag_sum)
-    # Barplot
-    df_internet_full_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_clustered)
-    barplotActivityCluster(df_internet_full_clustered, nclusters)
-    # Boxplot (normalized)
-    df_internet_full_clustered_norm <- df_internet_full_clustered
-    df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
-    boxplotActivityCluster(df_internet_full_clustered_norm, nclusters)
-    
-    # Milano Map
-    x_max <- 76
-    x_min <- 33
-    y_max <- 75
-    y_min <- 38
-    df_internet_ag_sum_milano <- subMap(df_internet_ag_sum, x_max, x_min, y_max, y_min)
-    # plot heat map
-    plotHeatMap(df_internet_ag_sum_milano)
-    #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
-    df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters)
-    
-    # Barplot
-    df_internet_milano_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_milano_clustered)
-    barplotActivityCluster(df_internet_milano_clustered, nclusters)
-    # Boxplot (normalized)
-    df_internet_milano_clustered_norm <- df_internet_milano_clustered
-    df_internet_milano_clustered_norm$internet_traffic <- normalize(df_internet_milano_clustered$internet_traffic)
-    boxplotActivityCluster(df_internet_milano_clustered_norm, nclusters)
+    # Clean data
+    df_full <- cleanData(df_weekday_full_raw)
+    write.csv(df_full, file = "weekday_cln.csv")
     
     
-    df_weekend <- rbind(df_weekend, df_internet_milano_clustered_norm)
-    #ddply(merge(df_aux, df_internet_milano_clustered_norm, all.x=TRUE), 
-    #      .(square_id, cluster, activity_time), summarise, ACTION=sum(internet_traffic))
+    file_type = "weekend"
+    df_weekend_full_raw <- read.csv(paste('data/',file_type,'/',weekend_files[1],sep=""),sep="\t",header=F)
+    for(file in weekend_files[-1]){
+      print(file)
+      
+      full_dir <- paste('data/',file_type,'/',file,sep="")
+      
+      cdr_input <- read.csv(full_dir,sep="\t",header=F)
+      
+      rbind(df_weekend_full_raw, cdr_input)
+      
+    }
+    
+    
+    # Clean data
+    df_full <- cleanData(df_weekend_full_raw)
+    write.csv(df_full, file = "weekend_cln.csv")
+    
   }
   
-  df_weekend
+  df_full <- read.csv("data/weekday_cln.csv",sep=",",header=T)
+  
+  
+  df_full <- read.csv("data/weekend_cln.csv",sep=",",header=T)
+  
+  
+  df_full$activity_time <- as.factor(df_full$activity_time)
+  
+  #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
+  # df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
+  df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time"))
+  
+  # aggregate squares and insert xy columns
+  df_internet_ag_sum <- aggragateTrafficXY(df_internet_full)
+  
+  # elbow test
+  elbowTest(df_internet_ag_sum)
+  
+  # clustering
+  nclusters <- 5
+  
+  # Full Map
+  df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
+  # plot heat map
+  plotHeatMap(df_internet_ag_sum)
+  # Barplot
+  df_internet_full_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_clustered)
+  barplotActivityCluster(df_internet_full_clustered, nclusters)
+  # Boxplot (normalized)
+  df_internet_full_clustered_norm <- df_internet_full_clustered
+  df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
+  boxplotActivityCluster(df_internet_full_clustered_norm, nclusters)
+  
+  # Milano Map
+  nclusters <- 4
+  x_max <- 75
+  x_min <- 35
+  y_max <- 80
+  y_min <- 40
+  df_internet_ag_sum_milano <- subMap(df_internet_ag_sum, x_max, x_min, y_max, y_min)
+  # plot heat map
+  plotHeatMap(df_internet_ag_sum_milano)
+  #df_internet_ag_sum_clustered_milano <- applySpectralClustering(df_internet_ag_sum_milano, nclusters)
+  df_internet_ag_sum_milano_clustered <- applyKmeans(df_internet_ag_sum_milano, nclusters)
+  
+  # Barplot
+  df_internet_milano_clustered <- mergeClusterActivityTime(df_internet_full, df_internet_ag_sum_milano_clustered)
+  barplotActivityCluster(df_internet_milano_clustered, nclusters)
+  # Boxplot (normalized)
+  df_internet_milano_clustered_norm <- df_internet_milano_clustered
+  df_internet_milano_clustered_norm$internet_traffic <- normalize(df_internet_milano_clustered$internet_traffic)
+  boxplotActivityCluster(df_internet_milano_clustered_norm, nclusters)
+  
+  
+  
+  
+  
+  
 }
 
 
+# 
+# df_weekend_milano_aux <- df_weekend_milano
+# 
+# df_weekend_milano_aux %>% 
+#   group_by(square_id, cluster, activity_time) %>% 
+#   summarise_all(funs(trimws(paste(., collapse = ''))))
+# 
+# dd <- df_weekend_milano_aux
+# dd[order(dd$square_id, dd$activity_time, decreasing = FALSE),]  
+# 
+# 
+# df_weekend_milano_aux <- aggregate(internet_traffic ~ square_id + activity_time + cluster, df_weekend_milano_aux, FUN=sum)
+# 
+# df_weekend_milano_aux$internet_traffic <- normalize(df_weekend_milano_aux$internet_traffic)
 
 
 
 
 
+
+
+# df_weekend_full <- data.frame(square_id=as.factor(factor()),
+#                          cluster=as.factor(factor()), 
+#                          activity_time=integer(), 
+#                          internet_traffic=numeric(),
+#                          stringsAsFactors=FALSE) 
+# df_weekend_milano <- data.frame(square_id=as.factor(factor()),
+#                          cluster=as.factor(factor()), 
+#                          activity_time=integer(), 
+#                          internet_traffic=numeric(),
+#                          stringsAsFactors=FALSE) 
+# 
+# 
+# 
+# df_weekday_full <- data.frame(square_id=as.factor(factor()),
+#                               cluster=as.factor(factor()), 
+#                               activity_time=integer(), 
+#                               internet_traffic=numeric(),
+#                               stringsAsFactors=FALSE) 
+# df_weekday_milano <- data.frame(square_id=as.factor(factor()),
+#                                 cluster=as.factor(factor()), 
+#                                 activity_time=integer(), 
+#                                 internet_traffic=numeric(),
+#                                 stringsAsFactors=FALSE) 
+
+
+# file_type = "weekday"
+# for(file in weekday){
+#   print(file)
+#   
+#   full_dir <- paste('data/',file_type,'/',file,sep="")
+#   df_full <- cleanData(full_dir)
+#   
+#   rbind(df_weekend_full, df_internet_full_clustered)
+#   
+# }
