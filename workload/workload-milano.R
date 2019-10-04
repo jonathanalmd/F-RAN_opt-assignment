@@ -257,7 +257,7 @@ initialCleaning <- function(){
 
 runAnalysis <- function(df_full){
   # df_full<-df_weekday_full
-  # df_full<-df_weekend_full
+  df_full<-df_weekend_full
   
   df_full$activity_time <- as.factor(df_full$activity_time)
   #df_internet_full <- subset(df_full, select=c("square_id", "internet_traffic", "activity_date","activity_time","total_activity"))
@@ -356,30 +356,33 @@ runAnalysis <- function(df_full){
   
 }
 
-main <- function(){
-  # Set directory
-  set_wdir()
-  clean <- FALSE
-  
-  if(clean){
-    initialCleaning()
-  }
-  
-  #df_weekday_full <- read.csv("data/cleaned/week/weekday_cln_week.csv",sep=",",header=T)
-  #runAnalysis(df_weekday_full)
-  
-  df_weekday_full <- read.csv("data/cleaned/2weeks/weekday_cln.csv",sep=",",header=T)
-  runAnalysis(df_weekday_full)
-  
-  df_weekend_full <- read.csv("data/cleaned/week/weekend_cln_3weeks.csv",sep=",",header=T)
-  runAnalysis(df_weekend_full)
-  
-  
-  # Full - 10gb
-  #df_weekday_full <- read.csv("data/cleaned/full/weekday_cln.csv",sep=",",header=T)
-  #runAnalysis(df_weekday_full)
-  
+
+
+
+
+# Set directory
+set_wdir()
+clean <- FALSE
+
+if(clean){
+  initialCleaning()
 }
+
+#df_weekday_full <- read.csv("data/cleaned/week/weekday_cln_week.csv",sep=",",header=T)
+#runAnalysis(df_weekday_full)
+
+df_weekday_full <- read.csv("data/cleaned/2weeks/weekday_cln.csv",sep=",",header=T)
+runAnalysis(df_weekday_full)
+
+df_weekend_full <- read.csv("data/cleaned/week/weekend_cln_3weeks.csv",sep=",",header=T)
+runAnalysis(df_weekend_full)
+
+
+# Full - 10gb
+#df_weekday_full <- read.csv("data/cleaned/full/weekday_cln.csv",sep=",",header=T)
+#runAnalysis(df_weekday_full)
+
+
 
 
 # 
