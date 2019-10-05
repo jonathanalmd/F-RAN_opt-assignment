@@ -342,6 +342,9 @@ runAnalysis <- function(df_full){
   #plotHeatMap(filter(df_internet_ag_sum, weekday==1))
   # Clustering
   df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
+  p <- ggplot(df_internet_ag_sum_clustered, aes(x,y))
+  print(p + geom_point(aes(colour=cluster), size=4.1)  + labs(fill = "Cluster")+  scale_color_npg())#scale_color_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"))) ##scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
+  
   write.csv(df_internet_ag_sum_clustered, file = "df_internet_ag_sum_clustered.csv")
   
   # for(i in 0:1){
