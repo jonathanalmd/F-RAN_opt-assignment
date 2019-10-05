@@ -191,14 +191,14 @@ normalizeActivity <- function(df){
 barplotActivityCluster <- function(df, nclusters, divide = TRUE){
   if(divide){
     for(i in 1:nclusters){
-      activityCluster <- df %>% filter(cluster == i)
+      activityCluster <- filter(df, cluster == i)
       print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic/nrow(activityCluster))) + 
               geom_bar(stat="identity") +
               xlab("Hour of day") + ylab("Internet traffic"))
     }
   }else{
     for(i in 1:nclusters){
-      activityCluster <- df %>% filter(cluster == i)
+      activityCluster <- filter(df, cluster == i)
       print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic)) + 
               geom_bar(stat="identity") + 
               xlab("Hour of day") + ylab("Internet traffic"))
@@ -318,7 +318,7 @@ runAnalysis <- function(df_full){
   
   
   # FULLMAP
-  pdf("weekday-week-fullmap-plots.pdf")
+  pdf("week-fullmap-plots.pdf")
   # elbow test
   elbowTest(df_internet_ag_sum)
   
@@ -388,7 +388,7 @@ runAnalysis <- function(df_full){
   
   # aggregate(internet_traffic ~ square_id + weekday, df, FUN=sum)
   
-  df_internet_full_sum_clustered <- aggregate(internet_traffic ~ weekday + cluster + activity_time, df_internet_full_clustered, FUN=sum)
+  df_internet_full_sum_clustered <- aggregate(internet_traffic ~ weekday + cluster + activity_time, df_internet_full_clustered, FUN=mean)
   df_internet_full_sum_clustered$internet_traffic <- normalize(df_internet_full_sum_clustered$internet_traffic)
   for(i in 0:1){
     #df_internet_full_sum_clustered <- getMeanPerTime(filter(df_internet_full_clustered,weekday==i), nclusters)
@@ -404,6 +404,7 @@ runAnalysis <- function(df_full){
     }
     
   }
+  
   
   
   
@@ -425,10 +426,21 @@ runAnalysis <- function(df_full){
       #write.csv(getSdPerTime(filter(df_internet_full_clustered_norm, cluster == i)), file = paste("fullmap_cluster",i,"-summary.csv", sep=""))
       
     }
-    
   }
   
   dev.off()
+  
+  
+  weekday.labs <- c("Weekend","Weekday")
+  names(weekday.labs) <- c(0,1)
+  df_internet_full_sum_clustered$weekday = factor(df_internet_full_sum_clustered$weekday, levels=c(1,0))
+  
+  pdf( file = "fullmap-resume.pdf", width = 21, height = 6 )	# numbers are cm 
+  print(ggplot(data=df_internet_full_sum_clustered, aes(x=activity_time, y=internet_traffic)) +
+          geom_bar(stat="identity") +
+          xlab("Hour of day") + ylab("Internet traffic") +
+          facet_grid(weekday~cluster, labeller = labeller(weekday = weekday.labs)))
+  dev.off() 
   
   
   
@@ -516,7 +528,7 @@ runAnalysis <- function(df_full){
   
   # aggregate(internet_traffic ~ square_id + weekday, df, FUN=sum)
   
-  df_internet_full_sum_clustered <- aggregate(internet_traffic ~ weekday + cluster + activity_time, df_internet_full_clustered, FUN=sum)
+  df_internet_full_sum_clustered <- aggregate(internet_traffic ~ weekday + cluster + activity_time, df_internet_full_clustered, FUN=mean)
   df_internet_full_sum_clustered$internet_traffic <- normalize(df_internet_full_sum_clustered$internet_traffic)
   for(i in 0:1){
     #df_internet_full_sum_clustered <- getMeanPerTime(filter(df_internet_full_clustered,weekday==i), nclusters)
@@ -557,6 +569,19 @@ runAnalysis <- function(df_full){
   }
   
   dev.off()
+  
+  
+  weekday.labs <- c("Weekend","Weekday")
+  names(weekday.labs) <- c(0,1)
+  df_internet_full_sum_clustered$weekday = factor(df_internet_full_sum_clustered$weekday, levels=c(1,0))
+  
+  pdf( file = "milano-resume.pdf", width = 21, height = 6 )	# numbers are cm 
+  print(ggplot(data=df_internet_full_sum_clustered, aes(x=activity_time, y=internet_traffic)) +
+          geom_bar(stat="identity") +
+          xlab("Hour of day") + ylab("Internet traffic") +
+          facet_grid(weekday~cluster, labeller = labeller(weekday = weekday.labs)))
+  dev.off() 
+  
   
 }
 
