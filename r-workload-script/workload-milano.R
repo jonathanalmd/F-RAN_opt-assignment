@@ -83,7 +83,6 @@ cleanData <- function(cdr_input){
 
 aggragateTrafficXY <- function(df){
   df <- subset(df,select=c("square_id","internet_traffic","weekday"))
-  
   df <- aggregate(internet_traffic ~ square_id + weekday, df, FUN=sum)
   df$square_id <- as.numeric(df$square_id) - 1
   df$x <- floor(as.numeric(df$square_id)/100) 
@@ -116,7 +115,16 @@ elbowTest <- function(df){
 plotHeatMap <- function(df){
   # heatmap
   p <- ggplot(df, aes(x,y, fill=internet_traffic))
-  p + geom_tile()
+  p + geom_tile() + scale_fill_material("indigo")
+  
+}
+
+
+plotHeatMap2 <- function(df){
+  # heatmap
+  p <- ggplot(df, aes(x,y, fill=internet_traffic))
+  p + geom_tile() + facet_grid(rows = vars(df$weekday)) + scale_fill_material("indigo") 
+  
 }
 
 
@@ -150,7 +158,7 @@ applyKmeans <- function(df, nclusters, psize = 1){
   
   # clustered map
   p <- ggplot(df, aes(x,y))
-  print(p + geom_point(aes(colour=cluster), size=psize) + scale_color_npg())#scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
+  print(p + geom_point(aes(colour=cluster), size=psize) +  scale_color_npg())#scale_color_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"))) ##scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
   
   return(df)
 }
@@ -159,9 +167,9 @@ mergeClusterActivityTime <- function(df_full, df_cluster,day_type=FALSE){
   # add activity time
   if(day_type){
     subdf <- subset(df_full,select=c("square_id","activity_time","internet_traffic","weekday"))
-    subdf <- aggregate(internet_traffic ~ square_id + activity_time, subdf, FUN=sum)
+    subdf <- aggregate(internet_traffic ~ square_id + activity_time + weekday, subdf, FUN=sum)
     
-    return (merge(subset(df_cluster, select=c("square_id","cluster","weekday")), subdf, by=c("square_id")))
+    return (merge(subset(df_cluster, select=c("square_id","cluster","weekday")), subdf, by=c("square_id","weekday")))
   }else{
     subdf <- subset(df_full,select=c("square_id","activity_time","internet_traffic"))
     subdf <- aggregate(internet_traffic ~ square_id + activity_time, subdf, FUN=sum)
@@ -219,9 +227,10 @@ boxplotActivityCluster <- function(df, nclusters, facet = TRUE){
 
 getMeanPerTime <- function(df, nclusters,weekday=FALSE){
   if(weekday){
+    #return (aggregate(df[,1:4],list(df$activity_time, df$cluster, df$weekday), mean))
     return (aggregate(internet_traffic ~ activity_time + cluster + weekday,df ,FUN=mean))  
   }else{
-    return (aggregate(internet_traffic ~ activity_time + cluster,df ,FUN=sum))
+    return (aggregate(internet_traffic ~ activity_time + cluster,df ,FUN=mean))
   }
   
   #return (aggregate(internet_traffic ~ activity_time + cluster,df ,FUN=mean))
@@ -258,7 +267,7 @@ initialCleaning <- function(){
     
     # Clean data
     df_full <- cleanData(df_weekday_full_raw)
-    write.csv(df_full, file = "weekday_cln.csv")
+    write.csv(df_full, file = "weekday_18-19-20-21-22_cln.csv")
     
     
     file_type = "weekend"
@@ -277,7 +286,7 @@ initialCleaning <- function(){
     
     # Clean data
     df_full <- cleanData(df_weekend_full_raw)
-    write.csv(df_full, file = "weekend_cln.csv")
+    write.csv(df_full, file = "weekend-10-16-17-23-24_cln.csv")
     
   }
 }
@@ -297,10 +306,13 @@ runAnalysis <- function(df_full){
   #rm(df_full)
   # aggregate squares and insert xy columns
   df_internet_ag_sum <- aggragateTrafficXY(df_full)
+  #df_internet_ag_sum <- df_internet_ag_sum_fullmap
   
   # df_internet_ag_sum <- read.csv("results/v5/weekday/dataframes-weekday-2weeks-fullmap/df_internet_ag_sum.csv",sep=",",header=T)
   # colnames(df_internet_ag_sum) <- c("square_id", "internet_traffic", "activity_date","activity_time")
   
+  
+  # FULLMAP
   pdf("weekday-week-fullmap-plots.pdf")
   # elbow test
   elbowTest(df_internet_ag_sum)
@@ -310,25 +322,36 @@ runAnalysis <- function(df_full){
   
   # Full Map
   # plot heat map
-  plotHeatMap(df_internet_ag_sum)
+  norm_df_internet_ag_sum <- df_internet_ag_sum
+  norm_df_internet_ag_sum$internet_traffic <- normalize(df_internet_ag_sum$internet_traffic)
+  norm_weekday_df_internet_ag_sum <- filter(df_internet_ag_sum, weekday == 1)
+  norm_weekend_df_internet_ag_sum <- filter(df_internet_ag_sum, weekday == 0)
+  #norm_weekday_df_internet_ag_sum$internet_traffic <- normalize(norm_weekday_df_internet_ag_sum$internet_traffic)
+  #norm_weekend_df_internet_ag_sum$internet_traffic <- normalize(norm_weekend_df_internet_ag_sum$internet_traffic)
+  plotHeatMap(norm_df_internet_ag_sum)
+  plotHeatMap2(norm_df_internet_ag_sum)
+  #plotHeatMap(norm_weekend_df_internet_ag_sum)
+  #plotHeatMap(norm_weekday_df_internet_ag_sum)
+  write.csv(df_internet_ag_sum, file = "df_internet_ag_sum.csv")
   #plotHeatMap(filter(df_internet_ag_sum, weekday==0))
   #plotHeatMap(filter(df_internet_ag_sum, weekday==1))
-  write.csv(df_internet_ag_sum, file = "df_internet_ag_sum.csv")
   # Clustering
   df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
   write.csv(df_internet_ag_sum_clustered, file = "df_internet_ag_sum_clustered.csv")
   
-  for(i in 0:1){
-    # Barplot
-    df_internet_full_clustered_day <- mergeClusterActivityTime(filter(df_full,weekday==i), filter(df_internet_ag_sum_clustered,weekday==i))
-    barplotActivityCluster(df_internet_full_clustered_day, nclusters)
-    # if(i==0){
-    #   write.csv(filter(df_internet_full_clustered_day,weekday==i), file = "weekend-df_internet_full_clustered.csv")
-    # }else{
-    #   write.csv(filter(df_internet_full_clustered_day,weekday==i), file = "weekday-df_internet_full_clustered.csv")
-    # }
-  }
-  rm(df_internet_full_clustered_day)
+  # for(i in 0:1){
+  #   # Barplot
+  #   df_internet_full_clustered_day <- mergeClusterActivityTime(filter(df_full,weekday==i), filter(df_internet_ag_sum_clustered,weekday==i))
+  #   barplotActivityCluster(df_internet_full_clustered_day, nclusters)
+  #   # if(i==0){
+  #   #   write.csv(filter(df_internet_full_clustered_day,weekday==i), file = "weekend-df_internet_full_clustered.csv")
+  #   # }else{
+  #   #   write.csv(filter(df_internet_full_clustered_day,weekday==i), file = "weekday-df_internet_full_clustered.csv")
+  #   # }
+  # }
+  # rm(df_internet_full_clustered_day)
+  
+  
   # subdf <- subset(filter(df_internet_full_clustered_norm, cluster == 1), select=c("activity_time","internet_traffic"))
   # write.csv(subdf, file = "subdf.csv")
   
@@ -336,7 +359,8 @@ runAnalysis <- function(df_full){
   # Boxplot (normalized)
   df_internet_full_clustered <- mergeClusterActivityTime(df_full, df_internet_ag_sum_clustered, TRUE)
   df_internet_full_clustered_norm <- df_internet_full_clustered
-  df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
+  #df_internet_full_clustered_norm$internet_traffic <- normalize(df_internet_full_clustered$internet_traffic)
+  df_internet_full_clustered_norm$internet_traffic <- scales::rescale(df_internet_full_clustered_norm$internet_traffic, to=c(0,1))
   for(i in 0:1){
     boxplotActivityCluster(filter(df_internet_full_clustered_norm, weekday==i), nclusters)
     if(i==0){
@@ -347,7 +371,19 @@ runAnalysis <- function(df_full){
   }
   
   # Barplot (normalized)
-  df_internet_full_sum_clustered <- getMeanPerTime(df_internet_full_clustered, nclusters, weekday=TRUE)
+  # df_internet_full_sum_clustered <- df_internet_full_clustered_norm
+  # df_internet_full_sum_clustered$internet_traffic<-scales::rescale(df_internet_full_sum_clustered$internet_traffic, to=c(0,1))
+
+  # Barplot (normalized)
+  # df_internet_full_sum_clustered <- df_internet_full_clustered
+
+  # 5
+  #df_internet_full_sum_clustered <- getMeanPerTime(df_internet_full_sum_clustered, nclusters, weekday=TRUE)
+  #df_internet_full_sum_clustered$internet_traffic <- normalize(df_internet_full_sum_clustered$internet_traffic)
+  
+  # aggregate(internet_traffic ~ square_id + weekday, df, FUN=sum)
+  
+  df_internet_full_sum_clustered <- aggregate(internet_traffic ~ weekday + cluster + activity_time, df_internet_full_clustered, FUN=sum)
   df_internet_full_sum_clustered$internet_traffic <- normalize(df_internet_full_sum_clustered$internet_traffic)
   for(i in 0:1){
     #df_internet_full_sum_clustered <- getMeanPerTime(filter(df_internet_full_clustered,weekday==i), nclusters)
@@ -357,9 +393,9 @@ runAnalysis <- function(df_full){
     
     barplotActivityCluster(filter(df_internet_full_sum_clustered, weekday==i), nclusters, divide=FALSE)
     if(i == 0){
-      write.csv(filter(df_internet_full_sum_clustered, weekday==i), file = "weekend-df_internet_full_sum_clustered.csv")
+      write.csv(filter(df_internet_full_sum_clustered, weekday==i), file = "weekend-df_internet_fullmap_sum_clustered.csv")
     }else{
-      write.csv(filter(df_internet_full_sum_clustered, weekday==i), file = "weekday-df_internet_full_sum_clustered.csv")
+      write.csv(filter(df_internet_full_sum_clustered, weekday==i), file = "weekday-df_internet_fullmap_sum_clustered.csv")
     }
     
   }
@@ -402,6 +438,7 @@ runAnalysis <- function(df_full){
   x_min <- 35
   y_max <- 80
   y_min <- 40
+  df_internet_ag_sum_fullmap <- df_internet_ag_sum
   df_internet_ag_sum <- subMap(df_internet_ag_sum, x_max, x_min, y_max, y_min)
   
   pdf("weekday-1week-milano-plots.pdf")
@@ -413,9 +450,14 @@ runAnalysis <- function(df_full){
   
   # Full Map
   # plot heat map
-  plotHeatMap(df_internet_ag_sum)
-  #plotHeatMap(filter(df_internet_ag_sum, weekday==0))
-  #plotHeatMap(filter(df_internet_ag_sum, weekday==1))
+  norm_df_internet_ag_sum$internet_traffic <- normalize(df_internet_ag_sum$internet_traffic) 
+  norm_weekday_df_internet_ag_sum <- filter(df_internet_ag_sum, weekday == 1)
+  norm_weekend_df_internet_ag_sum <- filter(df_internet_ag_sum, weekday == 0)
+  norm_weekday_df_internet_ag_sum$internet_traffic <- normalize(norm_weekday_df_internet_ag_sum$internet_traffic)
+  norm_weekend_df_internet_ag_sum$internet_traffic <- normalize(norm_weekend_df_internet_ag_sum$internet_traffic)
+  plotHeatMap(norm_df_internet_ag_sum)
+  plotHeatMap(norm_weekend_df_internet_ag_sum)
+  plotHeatMap(norm_weekday_df_internet_ag_sum)
   write.csv(df_internet_ag_sum, file = "df_internet_ag_sum.csv")
   # Clustering
   df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters, psize=4.5)
@@ -508,10 +550,10 @@ if(clean){
 
 #df_weekday_full <- read.csv("data/cleaned/week/weekday_cln_week.csv",sep=",",header=T)
 #runAnalysis(df_weekday_full)
-df_weekday <- read.csv("data/cleaned/week/weekday_cln_week.csv",sep=",",header=T)
+df_weekday <- read.csv("weekday_18-19-20-21-22_cln.csv",sep=",",header=T)
 df_weekday$weekday <- 1
 
-df_weekend <- read.csv("data/cleaned/week/weekend_cln_2week.csv",sep=",",header=T)
+df_weekend <- read.csv("weekend-10-16-17-23-24_cln.csv",sep=",",header=T)
 df_weekend$weekday <- 0
 
 df_full <- rbind(df_weekday, df_weekend)
