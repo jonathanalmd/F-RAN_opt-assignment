@@ -14,8 +14,8 @@ function n_ismt = minCores(scenario)
                     Ef_is = scenario.mdcs(s).vms(i).efficiency;
                     N_is = scenario.mdcs(s).vms(i).n_cores;
                     n_ismt(i,s,m,t) = scenario.transmited_data_mt(m,t) * scenario.W / (P_is * Ef_is * ((scenario.Phi - (3 * scenario.d_sm(s,m) / scenario.c) - (2 * scenario.H * scenario.d_sm(s,m) / scenario.d_hops) )) ) ;
-                    % N_is = 1;
-                    n_ismt(i,s,m,t) = ceil(n_ismt(i,s,m,t) / N_is);
+                    
+                    % n_ismt(i,s,m,t) = ceil(n_ismt(i,s,m,t) / N_is);
                 end
             end
         end

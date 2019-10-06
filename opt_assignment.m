@@ -14,7 +14,6 @@
 %scenario = scenario.start();
 %display(scenario);
 
-
 %% Saturation Problem
 function [vec, fval, answer, resume, n_ismt, output_a] = opt_assignment(scenario)
     %% Description

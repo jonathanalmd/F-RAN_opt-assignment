@@ -7,8 +7,11 @@ classdef Scenario
     % Clusters uniformly random within macro geographical area; 
     properties
         %% Basic problem inputs
+        % Simulation
+        map_type = "milano" % milano or fullmap 
+        day_type = "weekday" % weekday or weekend
         % Number of sites (hexagons) -- Scenario length
-        n_sites = 7; % 7
+        n_sites = 7 ; % 7
         % Time slots
         T = 24; % 
 
@@ -26,11 +29,14 @@ classdef Scenario
         M_smallcell;
         % M = M_macrocell + M_smallcell;
         M;
+        
+        mc_antenna_uplink = 50;
+        sc_antenna_uplink = 50;
 
         %% MDCs    
         % https://www.ec2instances.info/?selected=a1.medium,c4.8xlarge
         % Number of machine classes
-        I = 2;
+        I = 1;
         % Number of MDC's
         % S_macrocell = n_sites * mc_antennas_per_site % one MDC per MC antenna
         S_macrocell;
@@ -183,7 +189,13 @@ classdef Scenario
 %             mi2 = 150;
 %             sigma2 = 130;
 %             
-            obj.transmited_data_mt = obj.antennaSaturationNorm(mi1,sigma1,mi2,sigma2);
+            % normalized workload
+            % obj.transmited_data_mt = obj.antennaSaturationNorm(mi1,sigma1,mi2,sigma2);
+            
+            
+            obj.transmited_data_mt = obj.antennaSaturationMatrix(obj.map_type, obj.day_type, obj.mc_antenna_uplink, obj.sc_antenna_uplink);
+            
+            
             % Workload = transmited_data_mt * W
                         
             
@@ -303,7 +315,70 @@ classdef Scenario
             transmited_data_mt = transmited_data_mt * 10^6;
         end
         
+        %% Creating transmitted data matrix - antennaSaturationInput
+        function transmited_data_mt = antennaSaturationMatrix(obj, map_type, day_type, mc_antenna_uplink, sc_antenna_uplink)
+            transmited_data_mt = zeros([obj.M obj.T]);
+            workload_tables = read_input_csv(map_type, day_type);
+            % Milano cluster order: 1 5 3 4 2
+            % Fullmap order: 1 2 5 3 4 
+            for m = 1:obj.M
+                for t = 1:obj.T
+                    % workload_tables{1,5}(1,1) -- sd: workload_tables{1,5}(1,2)
+                    % workload_tables{1,5}(2,1) -- sd: workload_tables{1,5}(2,2)
+                    % workload_tables{1,5}(3,1) -- sd: workload_tables{1,5}(3,2)
+                    % workload_tables{1,5}(4,1) -- sd: workload_tables{1,5}(4,2)
+                    % ...
+                    % workload_tables{1,5}(23,1) -- sd: workload_tables{1,5}(23,2)
+                    % workload_tables{1,5}(24,1) -- sd: workload_tables{1,5}(24,2)
+                    
+                    % => workload_tables{1,cluster}(t,1) -- sd: workload_tables{1,cluster}(t,2)
+                    % sd_range = [-workload_tables{1,cluster}(t,2),workload_tables{1,cluster}(t,2)]
+                    
+                    %transmited_data_mt(m,t) = 
+                    
+                    % Macrocells
+                    if m == 1     % macrosite 1 macrocell
+                        % cluster 1 
+                        transmited_data_mt(m,t) = workload_tables * mc_antenna_uplink * 10^6;
+                    elseif m == 2 % macrosite 2 macrocell
+                        % cluster 4
+                    elseif m == 3 % macrosite 3 macrocell
+                        % cluster 3
+                    elseif m == 4 % macrosite 4 macrocell
+                        % cluster 2
+                    elseif m == 5 % macrosite 5 macrocell
+                        % cluster 4
+                    elseif m == 6 % macrosite 6 macrocell
+                        % cluster 3
+                    elseif m == 7 % macrosite 7 macrocell
+                        % cluster 2
+                        
+                    % Smallcells
+                    elseif m <= 11 % macrosite 1 smallcells
+                        % cluster 1 (1 sc) e 5 (3 sc)
+                        
+                    elseif m <= 15 % macrosite 2 smallcells
+                       % cluster 4
+                    elseif m <= 19 % macrosite 3 smallcells
+                       % cluster 3 
+                    elseif m <= 23 % macrosite 4 smallcells
+                       % cluster 2
+                    elseif m <= 27 % macrosite 5 smallcells
+                       % cluster 4 
+                    elseif m <= 31 % macrosite 6 smallcells
+                       % cluster 3
+                    else   % <= 35 % macrosite 7 smallcells
+                       % cluster 2 
+                    end
+                    
+                end                
+            end
+            bar(1:24, transmited_data_mt(1,:));
+            % sc_antenna_uplink / mc_antenna_uplink
+            transmited_data_mt = transmited_data_mt * sc_antenna_uplink * 10^6;
+        end
         
+
         %%  Return a matrix of distances - Antennas x MDCs (smallcells = cluster center / macrocells = same place)
         function d_sm = distances_sm(obj)
             d_sm =  euclidian_sm_LTE(obj.mdcs, [obj.macrocells obj.smallcells]);
