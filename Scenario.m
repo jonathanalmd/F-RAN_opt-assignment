@@ -1,4 +1,4 @@
-classdef Scenario
+classdef Scenario < handle
     %% System parameters
     % Scenario 1 - 36.872 Annex A
     % Hexagonal grid, 3 sectors per site, case 1
@@ -8,8 +8,22 @@ classdef Scenario
     properties
         %% Basic problem inputs
         % Simulation
-        map_type = "milano" % milano or fullmap 
-        day_type = "weekend" % weekday or weekend
+        map_type; % milano or fullmap 
+        simulation_type; % milano: downtown, urban, semiurban
+        %simulation_type = "urban" % fullmap: urban, semiurban, rural
+        day_type; % weekday or weekend
+        % 3 rows milano, 3 rows fullmap
+        cluster_cells = [1 1 5 5 1 5 5;
+                         1 5 3 4 3 4 3;
+                         4 2 2 4 2 2 4;
+                         1 1 2 2 1 2 2;
+                         5 5 3 3 5 3 3;
+                         3 4 4 4 4 4 4;
+                        ];
+        % fullmap: 2000 urban 3000 semiurban 9000 rural
+        % milano: 1000 downtown 2000 urban 3000 semiurban
+        dmacromacro = 1000; % 500
+
         % Number of sites (hexagons) -- Scenario length
         n_sites = 7 ; % 7
         % Time slots
@@ -109,7 +123,6 @@ classdef Scenario
         K = 0.1;
                 
         
-        dmacromacro = 3500; % 500
         dmacrocluster = 105;
         dsmallsmall = 20;
         dropradius_mc = 250;
@@ -128,8 +141,14 @@ classdef Scenario
     
     %% Methods
     methods
+        function SetSimulation(obj, m_type, d_type, s_type, dmm)
+            obj.map_type        = m_type;  
+            obj.day_type        = d_type;  
+            obj.simulation_type = s_type;      
+            obj.dmacromacro     = dmm;
+        end
         %% Main loop for starting the scenario
-        function obj = start(obj)
+        function obj = start(obj, set_simulation)
             % Number of Antennas 
             obj.M_macrocell = obj.n_sites * obj.mc_antennas_per_site;
             obj.M_smallcell = obj.n_sites * obj.mc_clusters_per_site * obj.sc_antennas_per_cluster;
@@ -193,7 +212,7 @@ classdef Scenario
             % obj.transmited_data_mt = obj.antennaSaturationNorm(mi1,sigma1,mi2,sigma2);
             
             
-            obj.transmited_data_mt = obj.antennaSaturationMatrix(obj.map_type, obj.day_type, obj.mc_antenna_uplink, obj.sc_antenna_uplink);
+            obj.transmited_data_mt = obj.antennaSaturationMatrix(obj.simulation_type, obj.map_type, obj.day_type, obj.cluster_cells, obj.mc_antenna_uplink, obj.sc_antenna_uplink);
             
             
             % Workload = transmited_data_mt * W
@@ -316,12 +335,28 @@ classdef Scenario
         end
         
         %% Creating transmitted data matrix - antennaSaturationInput
-        function transmited_data_mt = antennaSaturationMatrix(obj, map_type, day_type, mc_antenna_uplink, sc_antenna_uplink)
+        function transmited_data_mt = antennaSaturationMatrix(obj, simulation_type, map_type, day_type, cluster_cells, mc_antenna_uplink, sc_antenna_uplink)
             transmited_data_mt = zeros([obj.M obj.T]);
             workload_tables = read_input_csv(map_type, day_type);
-            scale = 10^6;
-            % Milano cluster order: 1 5 3 4 2
-            % Fullmap order: 1 2 5 3 4 
+            scale = 10^6; % Megas
+            if map_type == "milano"
+                if simulation_type == "downtown"
+                    clusters = cluster_cells(1,:);
+                elseif simulation_type == "urban" 
+                    clusters = cluster_cells(2,:);
+                else % semiurban
+                    clusters = cluster_cells(3,:);
+                end
+            else % fullmap
+                if simulation_type == "urban"
+                    clusters = cluster_cells(4,:);
+                elseif simulation_type == "semiurban" 
+                    clusters = cluster_cells(5,:);
+                else % rural
+                    clusters = cluster_cells(6,:);
+                end
+            end
+            
             for m = 1:obj.M
                 for t = 1:obj.T
                     % workload_tables{1,5}(1,1) -- sd: workload_tables{1,5}(1,2)
@@ -340,45 +375,26 @@ classdef Scenario
                     % Macrocells
                     if m <= 7
                         % Macrocells
-                        if m == 1     % macrosite 1 macrocell
-                            cluster = 1;
-                        elseif m == 2 % macrosite 2 macrocell
-                            cluster = 2;
-                        elseif m == 3 % macrosite 3 macrocell
-                            cluster = 4;
-                        elseif m == 4 % macrosite 4 macrocell
-                            cluster = 2;
-                        elseif m == 5 % macrosite 5 macrocell
-                            cluster = 3;
-                        elseif m == 6 % macrosite 6 macrocell
-                            cluster = 2;
-                        elseif m == 7 % macrosite 7 macrocell
-                            cluster = 4;
-                        end
+                        cluster = clusters(m)
                         antenna_uplink = mc_antenna_uplink;
                     else
                         % Smallcells
                         if m <= 11 % macrosite 1 smallcells
-                            if m == 8
-                                % cluster 1 (1 sc)
-                                cluster = 1;
-                            else
-                                % cluster 5 (3 sc)
-                                cluster = 5;
-                            end
+                           c = 1;
                         elseif m <= 15 % macrosite 2 smallcells
-                           cluster = 2;
+                           c = 2;
                         elseif m <= 19 % macrosite 3 smallcells
-                           cluster = 4;
+                           c = 3;
                         elseif m <= 23 % macrosite 4 smallcells
-                           cluster = 2;
+                           c = 4;
                         elseif m <= 27 % macrosite 5 smallcells
-                           cluster = 3;
+                           c = 5;
                         elseif m <= 31 % macrosite 6 smallcells
-                           cluster = 2;
+                           c = 6;
                         else   % <= 35 % macrosite 7 smallcells 
-                           cluster = 4;
+                           c = 7;
                         end
+                        cluster = clusters(c)
                         antenna_uplink = sc_antenna_uplink;
                     end     
                     % sd range
@@ -389,7 +405,11 @@ classdef Scenario
                     if workload + error < 0
                         workload = 0;
                         error = 0;
+                    elseif workload + error > 1
+                        workload = 1;
+                        error = 0
                     end
+                    
                     transmited_data_mt(m,t) = (workload + error) * antenna_uplink * scale;                    
                 end                
             end
