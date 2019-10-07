@@ -40,10 +40,18 @@ for t = 1:T
     for i = 1:I
         for s = 1:S
             if s < 8
-                N_is = scenario.mdcs(s).vms(i).n_cores * 3;
+                if i == 0
+                    N_is = scenario.mdcs(s).vms(i).n_cores * 8;
+                else
+                    N_is = scenario.mdcs(s).vms(i).n_cores * 4;
+                end
                 available_cores_mc(ihead) = available_cores_mc(ihead) + N_is;
             else
-                N_is = scenario.mdcs(s).vms(i).n_cores * 10;
+                if i == 0
+                    N_is = scenario.mdcs(s).vms(i).n_cores * 4;
+                else
+                    N_is = scenario.mdcs(s).vms(i).n_cores * 2;
+                end                
                 available_cores_sc(ihead) = available_cores_sc(ihead) + N_is;
             end
 %             available_cores(ihead) = available_cores(ihead) + (N_is);
@@ -52,6 +60,24 @@ for t = 1:T
     end
     ihead = ihead + 1;
 end
+% ihead = 1;
+% for t = 1:T
+%     for i = 1:I
+%         for s = 1:S
+%             if s < 8
+%                 N_is = scenario.mdcs(s).vms(i).n_cores * 700;
+%                 available_cores_mc(ihead) = available_cores_mc(ihead) + N_is;
+%             else
+%                 N_is = scenario.mdcs(s).vms(i).n_cores * 1000;
+%                 available_cores_sc(ihead) = available_cores_sc(ihead) + N_is;
+%             end
+% %             available_cores(ihead) = available_cores(ihead) + (N_is);
+%             available_cores(ihead) = available_cores(ihead) + N_is;
+%         end
+%     end
+%     ihead = ihead + 1;
+% end
+
 total_cores = available_cores;
 total_cores_mc = available_cores_mc;
 total_cores_sc = available_cores_sc;
@@ -91,8 +117,8 @@ for t = 1:T
             end
         end  
     end
-    available_cores_mc(ihead) = available_cores_mc(ihead) - mc_cores(1,ihead) - mc_cores(2,ihead) - mc_cores(3,ihead);
-    available_cores_sc(ihead) = available_cores_sc(ihead) - sc_cores(1,ihead) - sc_cores(2,ihead) - sc_cores(3,ihead);
+    available_cores_mc(ihead) = available_cores_mc(ihead) - mc_cores(1,ihead); - mc_cores(2,ihead); %- mc_cores(3,ihead);
+    available_cores_sc(ihead) = available_cores_sc(ihead) - sc_cores(1,ihead); - sc_cores(2,ihead); %- sc_cores(3,ihead);
     available_cores(ihead) = available_cores(ihead) - available_cores_mc(ihead) - available_cores_sc(ihead);
     ihead = ihead + 1; 
 end
@@ -246,5 +272,117 @@ grid on
 l1 = "MDC's - Macrocell";
 l2 = "MDC's - Smallcell";
 xlabel('Hour of day');
-ylabel("Number of available cores");
+ylabel("Number of unused cores");
 legend(cores_plot,[l1,l2]);
+
+
+% new analysis
+
+
+available_cores_mc_day = zeros([1,4]);
+available_cores_mc_day(1) = sum(available_cores_mc(1:6))
+available_cores_mc_day(2) = sum(available_cores_mc(7:12))
+available_cores_mc_day(3) = sum(available_cores_mc(13:18))
+available_cores_mc_day(4) = sum(available_cores_mc(19:24))
+available_cores_sc_day = zeros([1,4]);
+available_cores_sc_day(1) = sum(available_cores_sc(1:6))
+available_cores_sc_day(2) = sum(available_cores_sc(7:12))
+available_cores_sc_day(3) = sum(available_cores_sc(13:18))
+available_cores_sc_day(4) = sum(available_cores_sc(19:24))
+
+cores_plot = bar([available_cores_mc_day ; available_cores_sc_day]');
+grid on
+l1 = "MDC's - Macrocell";
+l2 = "MDC's - Smallcell";
+xlabel('Part of day');
+ylabel("Number of unused cores");
+legend(cores_plot,[l1,l2]);
+
+
+income_cores_mc_day = zeros([1,4]);
+income_cores_mc_day = available_cores_mc_day * 0.0425 * 6
+income_cores_sc_day = zeros([1,4]);
+income_cores_sc_day = available_cores_sc_day * 0.0425 * 6
+
+cores_plot = bar([income_cores_mc_day ; income_cores_sc_day]');
+grid on
+l1 = "MDC's - Macrocell";
+l2 = "MDC's - Smallcell";
+xlabel('Part of day');
+ylabel("Maximum income (USD)");
+legend(cores_plot,[l1,l2]);
+
+
+
+
+
+
+
+% total_cost
+
+mc_cost_day = zeros([1,4]);
+mc_cost_day(1) = sum(mc_cost(1:6))
+mc_cost_day(2) = sum(mc_cost(7:12))
+mc_cost_day(3) = sum(mc_cost(13:18))
+mc_cost_day(4) = sum(mc_cost(19:24))
+sc_cost_day = zeros([1,4]);
+sc_cost_day(1) = sum(sc_cost(1:6))
+sc_cost_day(2) = sum(sc_cost(7:12))
+sc_cost_day(3) = sum(sc_cost(13:18))
+sc_cost_day(4) = sum(sc_cost(19:24))
+
+cores_plot = bar([mc_cost_day ; sc_cost_day]');
+grid on
+l1 = "MDC's - Macrocell";
+l2 = "MDC's - Smallcell";
+xlabel('Part of day');
+ylabel("Cost of allocation (USD)");
+legend(cores_plot,[l1,l2]);
+
+
+
+
+
+
+% proportion income/cost - "a cada 1 dolar ganho 15"
+cost_income_mc = income_cores_mc_day ./ mc_cost_day;
+cost_income_sc = income_cores_sc_day ./ mc_cost_day;
+
+cores_plot = bar([cost_income_mc ; cost_income_sc]');
+grid on
+l1 = "MDC's - Macrocell";
+l2 = "MDC's - Smallcell";
+xlabel('Part of day');
+ylabel("Maximum income / Cost of allocation");
+legend(cores_plot,[l1,l2]);
+
+
+
+
+
+% norm_data_mc = (cost_income_mc - min(cost_income_mc)) / ( max(cost_income_mc) - min(cost_income_mc) )
+% norm_data_sc = (cost_income_sc - min(cost_income_sc)) / ( max(cost_income_sc) - min(cost_income_sc) )
+% 
+% cores_plot = bar([norm_data_mc ; norm_data_sc]');
+% grid on
+% l1 = "MDC's - Macrocell";
+% l2 = "MDC's - Smallcell";
+% xlabel('Part of day');
+% ylabel("Cost / Maximum income proportion");
+% legend(cores_plot,[l1,l2]);
+
+
+% 
+% mc_income_cost_hours = (available_cores_mc * 0.0425) ./ mc_cost;
+% sc_income_cost_hours = (available_cores_sc * 0.0425) ./ sc_cost;
+% 
+% cores_plot = bar([mc_income_cost_hours ; sc_income_cost_hours]');
+% grid on
+% l1 = "MDC's - Macrocell";
+% l2 = "MDC's - Smallcell";
+% xlabel('Part of day');
+% ylabel("Maximum income / Cost of allocation ");
+% legend(cores_plot,[l1,l2]);
+% 
+
+

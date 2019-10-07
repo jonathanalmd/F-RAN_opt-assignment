@@ -9,7 +9,7 @@ classdef Scenario
         %% Basic problem inputs
         % Simulation
         map_type = "milano" % milano or fullmap 
-        day_type = "weekday" % weekday or weekend
+        day_type = "weekend" % weekday or weekend
         % Number of sites (hexagons) -- Scenario length
         n_sites = 7 ; % 7
         % Time slots
@@ -30,13 +30,13 @@ classdef Scenario
         % M = M_macrocell + M_smallcell;
         M;
         
-        mc_antenna_uplink = 50;
+        mc_antenna_uplink = 70;
         sc_antenna_uplink = 50;
 
         %% MDCs    
         % https://www.ec2instances.info/?selected=a1.medium,c4.8xlarge
         % Number of machine classes
-        I = 1;
+        I = 2;
         % Number of MDC's
         % S_macrocell = n_sites * mc_antennas_per_site % one MDC per MC antenna
         S_macrocell;
@@ -109,7 +109,7 @@ classdef Scenario
         K = 0.1;
                 
         
-        dmacromacro = 1000; % 500
+        dmacromacro = 3500; % 500
         dmacrocluster = 105;
         dsmallsmall = 20;
         dropradius_mc = 250;
@@ -319,6 +319,7 @@ classdef Scenario
         function transmited_data_mt = antennaSaturationMatrix(obj, map_type, day_type, mc_antenna_uplink, sc_antenna_uplink)
             transmited_data_mt = zeros([obj.M obj.T]);
             workload_tables = read_input_csv(map_type, day_type);
+            scale = 10^6;
             % Milano cluster order: 1 5 3 4 2
             % Fullmap order: 1 2 5 3 4 
             for m = 1:obj.M
@@ -337,45 +338,64 @@ classdef Scenario
                     %transmited_data_mt(m,t) = 
                     
                     % Macrocells
-                    if m == 1     % macrosite 1 macrocell
-                        % cluster 1 
-                        transmited_data_mt(m,t) = workload_tables * mc_antenna_uplink * 10^6;
-                    elseif m == 2 % macrosite 2 macrocell
-                        % cluster 4
-                    elseif m == 3 % macrosite 3 macrocell
-                        % cluster 3
-                    elseif m == 4 % macrosite 4 macrocell
-                        % cluster 2
-                    elseif m == 5 % macrosite 5 macrocell
-                        % cluster 4
-                    elseif m == 6 % macrosite 6 macrocell
-                        % cluster 3
-                    elseif m == 7 % macrosite 7 macrocell
-                        % cluster 2
-                        
-                    % Smallcells
-                    elseif m <= 11 % macrosite 1 smallcells
-                        % cluster 1 (1 sc) e 5 (3 sc)
-                        
-                    elseif m <= 15 % macrosite 2 smallcells
-                       % cluster 4
-                    elseif m <= 19 % macrosite 3 smallcells
-                       % cluster 3 
-                    elseif m <= 23 % macrosite 4 smallcells
-                       % cluster 2
-                    elseif m <= 27 % macrosite 5 smallcells
-                       % cluster 4 
-                    elseif m <= 31 % macrosite 6 smallcells
-                       % cluster 3
-                    else   % <= 35 % macrosite 7 smallcells
-                       % cluster 2 
+                    if m <= 7
+                        % Macrocells
+                        if m == 1     % macrosite 1 macrocell
+                            cluster = 1;
+                        elseif m == 2 % macrosite 2 macrocell
+                            cluster = 2;
+                        elseif m == 3 % macrosite 3 macrocell
+                            cluster = 4;
+                        elseif m == 4 % macrosite 4 macrocell
+                            cluster = 2;
+                        elseif m == 5 % macrosite 5 macrocell
+                            cluster = 3;
+                        elseif m == 6 % macrosite 6 macrocell
+                            cluster = 2;
+                        elseif m == 7 % macrosite 7 macrocell
+                            cluster = 4;
+                        end
+                        antenna_uplink = mc_antenna_uplink;
+                    else
+                        % Smallcells
+                        if m <= 11 % macrosite 1 smallcells
+                            if m == 8
+                                % cluster 1 (1 sc)
+                                cluster = 1;
+                            else
+                                % cluster 5 (3 sc)
+                                cluster = 5;
+                            end
+                        elseif m <= 15 % macrosite 2 smallcells
+                           cluster = 2;
+                        elseif m <= 19 % macrosite 3 smallcells
+                           cluster = 4;
+                        elseif m <= 23 % macrosite 4 smallcells
+                           cluster = 2;
+                        elseif m <= 27 % macrosite 5 smallcells
+                           cluster = 3;
+                        elseif m <= 31 % macrosite 6 smallcells
+                           cluster = 2;
+                        else   % <= 35 % macrosite 7 smallcells 
+                           cluster = 4;
+                        end
+                        antenna_uplink = sc_antenna_uplink;
+                    end     
+                    % sd range
+                    sd_range = [-workload_tables{1,cluster}(t,2),workload_tables{1,cluster}(t,2)]
+                    % error = rand(sd_range)
+                    error = (sd_range(2)-sd_range(1)).*rand(1,1) + sd_range(1);
+                    workload = workload_tables{1,cluster}(t,1);
+                    if workload + error < 0
+                        workload = 0;
+                        error = 0;
                     end
-                    
+                    transmited_data_mt(m,t) = (workload + error) * antenna_uplink * scale;                    
                 end                
             end
             bar(1:24, transmited_data_mt(1,:));
             % sc_antenna_uplink / mc_antenna_uplink
-            transmited_data_mt = transmited_data_mt * sc_antenna_uplink * 10^6;
+            % transmited_data_mt = transmited_data_mt * 10^6;
         end
         
 
