@@ -14,8 +14,8 @@ classdef Scenario < handle
         day_type; % weekday or weekend
         % 3 rows milano, 3 rows fullmap
         cluster_cells = [1 1 5 5 1 5 5;
-                         1 5 3 4 3 4 3;
-                         4 2 2 4 2 2 4;
+                         1 3 5 3 5 3 5;
+                         5 3 4 2 3 4 2;
                          1 1 2 2 1 2 2;
                          5 5 3 3 5 3 3;
                          3 4 4 4 4 4 4;
@@ -44,7 +44,7 @@ classdef Scenario < handle
         % M = M_macrocell + M_smallcell;
         M;
         
-        mc_antenna_uplink = 70;
+        mc_antenna_uplink = 50;
         sc_antenna_uplink = 50;
 
         %% MDCs    
@@ -375,7 +375,7 @@ classdef Scenario < handle
                     % Macrocells
                     if m <= 7
                         % Macrocells
-                        cluster = clusters(m)
+                        cluster = clusters(m);
                         antenna_uplink = mc_antenna_uplink;
                     else
                         % Smallcells
@@ -394,21 +394,22 @@ classdef Scenario < handle
                         else   % <= 35 % macrosite 7 smallcells 
                            c = 7;
                         end
-                        cluster = clusters(c)
+                        cluster = clusters(c);
                         antenna_uplink = sc_antenna_uplink;
                     end     
                     % sd range
-                    sd_range = [-workload_tables{1,cluster}(t,2),workload_tables{1,cluster}(t,2)]
+                    sd_range = [-workload_tables{1,cluster}(t,2),workload_tables{1,cluster}(t,2)];
                     % error = rand(sd_range)
                     error = (sd_range(2)-sd_range(1)).*rand(1,1) + sd_range(1);
                     workload = workload_tables{1,cluster}(t,1);
                     if workload + error < 0
                         workload = 0;
                         error = 0;
-                    elseif workload + error > 1
-                        workload = 1;
-                        error = 0
                     end
+%                     elseif workload + error > 1
+%                         workload = 1;
+%                         error = 0;
+%                     end
                     
                     transmited_data_mt(m,t) = (workload + error) * antenna_uplink * scale;                    
                 end                
