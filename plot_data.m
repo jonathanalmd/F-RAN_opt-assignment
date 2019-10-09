@@ -13,9 +13,10 @@ simulation = ["milano", "weekday", "downtown", 1000;
             ];
         
 run_simulation = 1;
-cost_income_global = zeros(4,2,30);
+r = 40;
+cost_income_global = zeros(4,2,r);
 for run_simulation = 1:6
-    for repeat = 1:40
+    for repeat = 1:r
         display(run_simulation);
         display(simulation(run_simulation,:));
         display(repeat);
@@ -352,10 +353,10 @@ for run_simulation = 1:6
 
 
         available_cores_mc_day = zeros([1,4]);
-        available_cores_mc_day(1) = sum(available_cores_mc(1:6));
-        available_cores_mc_day(2) = sum(available_cores_mc(7:12));
-        available_cores_mc_day(3) = sum(available_cores_mc(13:18));
-        available_cores_mc_day(4) = sum(available_cores_mc(19:24));
+        available_cores_mc_day(1) = sum(available_cores_mc(1:6)); % madrugada
+        available_cores_mc_day(2) = sum(available_cores_mc(7:12)); % manhã 
+        available_cores_mc_day(3) = sum(available_cores_mc(13:18)); % tarde
+        available_cores_mc_day(4) = sum(available_cores_mc(19:24)); % noite
         available_cores_sc_day = zeros([1,4]);
         available_cores_sc_day(1) = sum(available_cores_sc(1:6));
         available_cores_sc_day(2) = sum(available_cores_sc(7:12));
@@ -379,10 +380,10 @@ for run_simulation = 1:6
 
 
         income_cores_mc_day = zeros([1,4]);
-        income_cores_mc_day = available_cores_mc_day * 0.0425 * 6;
+        income_cores_mc_day = available_cores_mc_day * 0.02125; % * 6
         income_cores_sc_day = zeros([1,4]);
-        income_cores_sc_day = available_cores_sc_day * 0.0425 * 6;
-
+        income_cores_sc_day = available_cores_sc_day * 0.02125; % * 6
+        
         cores_plot = bar([income_cores_mc_day ; income_cores_sc_day]');
         grid on
         l1 = "MDC's - Macrocell";
@@ -440,7 +441,7 @@ for run_simulation = 1:6
         mc_cost_day(mc_cost_day==0) = 1;
         sc_cost_day(sc_cost_day==0) = 1;
         cost_income_mc = income_cores_mc_day ./ mc_cost_day;
-        cost_income_sc = income_cores_sc_day ./ sc_cost_day;
+        cost_income_sc = (income_cores_sc_day)*1.5 ./ sc_cost_day;
 
         cores_plot = bar([cost_income_mc ; cost_income_sc]');
         grid on
@@ -493,14 +494,14 @@ for run_simulation = 1:6
     end
     
     csv_output = strcat(plot_dir,'income-per-cost-sum');
-    for i = 1:30
+    for i = 1:r
         csv_output = strcat(csv_output,int2str(i));
         display(csv_output)
         csvwrite(char(strcat(csv_output,'.csv')),cost_income_global(:,:,i));
         csv_output = strcat(plot_dir,'income-per-cost-sum');
     end
     
-    cost_income_global = zeros(4,2,30);
+    cost_income_global = zeros(4,2,r);
     
 end
 

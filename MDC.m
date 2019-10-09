@@ -27,7 +27,7 @@ classdef MDC
 %                 obj.vms = [obj.vms VM(2, 3.9*10^9, 36, 16, 1.530, index)]; % c5.9xlarge
 
                   %obj.vms = [obj.vms VM(1, 2.9*10^9, 4, 16, 0.170, index)]; % c5.4xlarge price/core
-                  obj.vms = [obj.vms VM(2, 2.9*10^9, 6, 16, 0.255, index)]; % D-1637    price/core = 0.0425
+                  obj.vms = [obj.vms VM(1, 2.9*10^9, 6, 16, 0.255, index)]; % D-1637    price/core = 0.0425
                   obj.vms = [obj.vms VM(2, 2.8*10^9, 8, 16, 0.34, index)]; % xeon D-1653N
             % Else SmallCell
             else
