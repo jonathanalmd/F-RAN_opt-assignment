@@ -91,7 +91,29 @@ for (map in maps){
 milano_df <- filter(total_df, map_type == "milano")
 fullmap_df <- filter(total_df, map_type == "fullmap")
 
+pdf("week-milano-plots.pdf")
 
+
+
+ggplot(data=filter(total_df, map_type == "milano"), aes(x=day_part, y=prop, fill=cell_type)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
+  facet_grid(region~day_type) + 
+  theme_bw()
+
+
+ggplot(data=filter(total_df, map_type == "milano" & day_part != "night"), aes(x=day_part, y=prop, fill=cell_type)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
+  facet_grid(region~day_type) + 
+  theme_bw()
+
+
+ggplot(data=filter(total_df, map_type == "milano" & day_part == "night"), aes(x=day_part, y=prop, fill=cell_type)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
+  facet_grid(region~day_type) + 
+  theme_bw()
 
 # without semiurban
 # with night
@@ -100,12 +122,6 @@ ggplot(data=filter(total_df, map_type == "milano" & (region == "downtown" | regi
   geom_boxplot() +
   xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
   facet_grid(region~day_type) + 
-  theme_bw()
-
-ggplot(data=filter(total_df, map_type == "milano" & (region == "downtown" | region == "urban")), aes(x=day_part, y=prop, fill=cell_type)) +
-  geom_boxplot() +
-  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
-  facet_grid(rows = vars(region)) + 
   theme_bw()
 
 
@@ -139,7 +155,7 @@ ggplot(data=filter(total_df, map_type == "milano" & (region == "downtown") & day
 
 
 
-
+dev.off()
 
 
 
@@ -272,7 +288,16 @@ t.test(filter(fullmap_df, cell_type == "sc" & day_type == "weekend" & region == 
 
 
 
+
+
+
+
+
+
+
+
 # t.test milano
+# MC
 # milano mc weekday urban 
 t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "downtown" & day_part == "night")$prop)$"conf.int"
 t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "downtown" & day_part == "morning")$prop)$"conf.int"
@@ -307,6 +332,172 @@ t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "
 t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "semiurban" & day_part == "morning")$prop)$"conf.int"
 t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "semiurban" & day_part == "afternoon")$prop)$"conf.int"
 t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "semiurban" & day_part == "evening")$prop)$"conf.int"
+
+
+
+
+
+
+# SC
+# milano sc weekday urban 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown" & day_part == "night")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown" & day_part == "morning")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown" & day_part == "afternoon")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown" & day_part == "evening")$prop)$"conf.int"
+# milano sc weekend urban 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown" & day_part == "night")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown" & day_part == "morning")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown" & day_part == "afternoon")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown" & day_part == "evening")$prop)$"conf.int"
+
+
+# milano sc weekday semiurban
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban" & day_part == "night")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban" & day_part == "morning")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban" & day_part == "afternoon")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban" & day_part == "evening")$prop)$"conf.int"
+# milano sc weekend semiurban
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban" & day_part == "night")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban" & day_part == "morning")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban" & day_part == "afternoon")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban" & day_part == "evening")$prop)$"conf.int"
+
+
+# milano sc weekday semirural 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban" & day_part == "night")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban" & day_part == "morning")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban" & day_part == "afternoon")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban" & day_part == "evening")$prop)$"conf.int"
+# milano sc weekend semirural
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban" & day_part == "night")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban" & day_part == "morning")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban" & day_part == "afternoon")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban" & day_part == "evening")$prop)$"conf.int"
+
+
+
+
+
+
+
+
+
+
+
+
+
+# t.test milano
+# MC
+# milano mc weekday urban 
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "downtown")$prop)
+# milano mc weekend urban 
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "downtown")$prop)
+
+# milano mc weekday semiurban
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "urban")$prop)
+# milano mc weekend semiurban
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "urban")$prop)
+
+# milano mc weekday semirural 
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "semiurban")$prop)
+# milano mc weekend semirural
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "semiurban")$prop)
+
+
+
+
+
+# SC
+# milano sc weekday urban 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown")$prop)
+# milano sc weekend urban 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown")$prop)
+
+# milano sc weekday semiurban
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban")$prop)
+# milano sc weekend semiurban
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban")$prop)
+
+# milano sc weekday semirural 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban")$prop)
+# milano sc weekend semirural
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban")$prop)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# t.test milano
+# MC
+milano_df <- filter(milano_df, day_part != "night")
+
+# milano mc weekday urban 
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "downtown")$prop)
+# milano mc weekend urban 
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "downtown")$prop)
+
+# milano mc weekday semiurban
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "urban")$prop)
+# milano mc weekend semiurban
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "urban")$prop)
+
+# milano mc weekday semirural 
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekday" & region == "semiurban")$prop)
+# milano mc weekend semirural
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "mc" & day_type == "weekend" & region == "semiurban")$prop)
+
+
+
+
+
+# SC
+# milano sc weekday urban 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "downtown")$prop)
+# milano sc weekend urban 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "downtown")$prop)
+
+# milano sc weekday semiurban
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "urban")$prop)
+# milano sc weekend semiurban
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "urban")$prop)
+
+# milano sc weekday semirural 
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekday" & region == "semiurban")$prop)
+# milano sc weekend semirural
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban")$prop)$"conf.int"
+t.test(filter(milano_df, cell_type == "sc" & day_type == "weekend" & region == "semiurban")$prop)
 
 
 

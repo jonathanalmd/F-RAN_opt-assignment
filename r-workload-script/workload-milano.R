@@ -107,7 +107,7 @@ elbowTest <- function(df){
   clusterFrame <- data.frame(withinss=wcss,Cluster=seq(1:20))
   
   # When number of cluster increases then the SSE will be reduced.
-  ggplot(data=clusterFrame, aes(x=Cluster, y=withinss, group=1)) + geom_line(colour="red", size=1.5) + geom_point(colour="red", size=4, shape=21, fill="white") + xlab("Number of clusters") + ylab("Withinss")
+  ggplot(data=clusterFrame, aes(x=Cluster, y=withinss, group=1)) + geom_line(colour="red", size=1.5) + geom_point(colour="red", size=4, shape=21, fill="white") + xlab("Number of clusters") + ylab("Withinss")+ theme_bw()
   
 }
 
@@ -115,7 +115,7 @@ elbowTest <- function(df){
 plotHeatMap <- function(df){
   # heatmap
   p <- ggplot(df, aes(x,y, fill=internet_traffic))
-  p + geom_tile() + scale_fill_material("indigo") + labs(fill = "Internet traffic")+ xlab("Square.x") + ylab("Square.y")
+  p + geom_tile() + scale_fill_material("indigo") + coord_fixed(ratio = 1) + labs(fill = "Internet traffic")+ xlab("Square.x") + ylab("Square.y")+ theme_bw()
   
 }
 
@@ -128,7 +128,8 @@ plotHeatMap2 <- function(df){
   names(weekday.labs) <- c(0,1)
   
   p <- ggplot(df, aes(x,y, fill=internet_traffic))
-  p + geom_tile() + facet_grid(rows = vars(weekday), labeller = labeller(weekday = weekday.labs)) + scale_fill_material("indigo")  + labs(fill = "Internet traffic") + xlab("Square.x") + ylab("Square.y")
+  p + geom_tile() + facet_grid(rows = vars(weekday), labeller = labeller(weekday = weekday.labs)) + coord_fixed(ratio = 1)+ scale_fill_material("indigo")  + labs(fill = "Internet traffic") + xlab("Square.x") + ylab("Square.y")+ theme_bw() +
+    theme(aspect.ratio=1)
   
 }
 
@@ -148,7 +149,7 @@ applySpectralClustering <- function(df, nclusters){
   
   # clustered map
   p <- ggplot(df, aes(x,y))
-  print(p + geom_point(aes(colour=cluster), size=3))
+  print(p + geom_point(aes(colour=cluster), size=3)+ theme_bw())
   
   return (df)
 }
@@ -194,20 +195,20 @@ barplotActivityCluster <- function(df, nclusters, divide = TRUE){
       activityCluster <- filter(df, cluster == i)
       print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic/nrow(activityCluster))) + 
               geom_bar(stat="identity") +
-              xlab("Hour of day") + ylab("Internet traffic"))
+              xlab("Hour of day") + ylab("Internet traffic") + theme_bw()) 
     }
   }else{
     for(i in 1:nclusters){
       activityCluster <- filter(df, cluster == i)
       print(ggplot(aggregate(internet_traffic ~ activity_time,activityCluster ,FUN=sum), aes(x=activity_time, y=internet_traffic)) + 
               geom_bar(stat="identity") + 
-              xlab("Hour of day") + ylab("Internet traffic"))
+              xlab("Hour of day") + ylab("Internet traffic")+ theme_bw())
     }
   }
   print(ggplot(data=df, aes(x=activity_time, y=internet_traffic)) +
           geom_bar(stat="identity") +
           xlab("Hour of day") + ylab("Internet traffic") +
-          facet_grid(rows = vars(cluster)))
+          facet_grid(rows = vars(cluster))+ theme_bw())
   
 }
 
@@ -217,7 +218,7 @@ boxplotActivityCluster <- function(df, nclusters, facet = TRUE){
     activityCluster <- filter(df, cluster == i)
     print(ggplot(data=activityCluster, aes(x=activity_time, y=internet_traffic)) +
             geom_boxplot() +
-            xlab("Hour of day") + ylab("Internet traffic"))
+            xlab("Hour of day") + ylab("Internet traffic")+ theme_bw()) 
   }
   
   if(facet){
@@ -225,7 +226,7 @@ boxplotActivityCluster <- function(df, nclusters, facet = TRUE){
     print(ggplot(data=df, aes(x=activity_time, y=internet_traffic)) +
             geom_boxplot() +
             xlab("Hour of day") + ylab("Internet traffic") +
-            facet_grid(rows = vars(cluster)))
+            facet_grid(rows = vars(cluster))+ theme_bw()) 
   }
   
 }
@@ -311,7 +312,7 @@ runAnalysis <- function(df_full){
   #rm(df_full)
   # aggregate squares and insert xy columns
   df_internet_ag_sum <- aggragateTrafficXY(df_full)
-  #df_internet_ag_sum <- df_internet_ag_sum_fullmap
+  # df_internet_ag_sum <- df_internet_ag_sum_fullmap
   
   # df_internet_ag_sum <- read.csv("results/v5/weekday/dataframes-weekday-2weeks-fullmap/df_internet_ag_sum.csv",sep=",",header=T)
   # colnames(df_internet_ag_sum) <- c("square_id", "internet_traffic", "activity_date","activity_time")
@@ -342,9 +343,10 @@ runAnalysis <- function(df_full){
   #plotHeatMap(filter(df_internet_ag_sum, weekday==1))
   # Clustering
   df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters)
+  pdf("fullmap-clustered.pdf")
   p <- ggplot(df_internet_ag_sum_clustered, aes(x,y))
-  print(p + geom_point(aes(colour=cluster), size=4.1)  + labs(fill = "Cluster")+  scale_color_npg())#scale_color_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"))) ##scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
-  
+  print(p + geom_point(shape = 15, aes(colour=cluster), size=3)+ coord_fixed(ratio = 1)  + labs(colour = "Cluster")+ xlab("Square.x") + ylab("Square.y")+scale_color_npg()+ theme_bw())#scale_color_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"))) ##scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
+  dev.off()
   write.csv(df_internet_ag_sum_clustered, file = "df_internet_ag_sum_clustered.csv")
   
   # for(i in 0:1){
@@ -412,7 +414,12 @@ runAnalysis <- function(df_full){
   
   
   #write.csv(getSdPerTime(df_internet_full_clustered,nclusters), file = "fullmap_all-clusters-sd.csv")
-  
+  df_internet_full_sum_clustered_sd <- data.frame(weekday=factor(),
+                                                  cluster=factor(),
+                                                  activity_time=factor(),
+                                                  internet_traffic=numeric(),
+                                                  internet_traffic_sd=numeric(),
+                                                  stringsAsFactors=FALSE)
   for(i in 1:nclusters){
     for (j in 0:1){
       df_act <- subset(filter(filter(df_internet_full_sum_clustered, weekday==j), cluster == i), select=c("activity_time","internet_traffic"))
@@ -420,6 +427,11 @@ runAnalysis <- function(df_full){
       df_act <- df_act[order(df_act$activity_time),]
       df_act <- df_act[,c(1,3,2)]
       colnames(df_act) <- c("activity_time","internet_traffic","internet_traffic_sd")
+      
+      rows = data.frame(rep(j, nrow(df_act)), rep(i, nrow(df_act)), df_act$activity_time, df_act$internet_traffic, df_act$internet_traffic_sd)
+    
+      colnames(rows) <- c("weekday","cluster","activity_time","internet_traffic","internet_traffic_sd")
+      df_internet_full_sum_clustered_sd <- rbind(df_internet_full_sum_clustered_sd, rows)
       if(j == 0){
         write.csv(df_act, file = paste("weekend-fullmap_cluster",i,".csv", sep=""))
       }else{
@@ -442,10 +454,36 @@ runAnalysis <- function(df_full){
   print(ggplot(data=df_internet_full_sum_clustered, aes(x=activity_time, y=internet_traffic)) +
           geom_bar(stat="identity") +
           xlab("Hour of day") + ylab("Internet traffic") +
-          facet_grid(weekday~cluster, labeller = labeller(weekday = weekday.labs)))
+          facet_grid(weekday~cluster, labeller = labeller(weekday = weekday.labs))+theme_bw())
   dev.off() 
   
   
+  
+  weekday.labs <- c("Weekend","Weekday")
+  names(weekday.labs) <- c(0,1)
+  df_internet_full_sum_clustered_sd$weekday = factor(df_internet_full_sum_clustered_sd$weekday, levels=c(1,0))
+  pdf( file = "fullmap-resume.pdf", width = 21, height = 6 )	# numbers are cm 
+  
+  print(ggplot(data=df_internet_full_sum_clustered_sd, aes(x=activity_time, y=internet_traffic)) +
+          geom_bar(stat="identity") +
+          xlab("Hour of day") + ylab("Internet traffic") +
+          facet_grid(weekday~cluster, labeller = labeller(weekday = weekday.labs))+theme_bw()+
+          geom_errorbar(aes(ymin=internet_traffic-internet_traffic_sd, ymax=internet_traffic+internet_traffic_sd), width=.2,
+                        position=position_dodge(.9)))
+  dev.off() 
+  
+  
+  
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==1]  <- "c4"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==4]  <- "c1"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster=="c1"]  <- 1
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster=="c4"]  <- 4
+  
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==1]  <- "Cluster 1"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==2]  <- "Cluster 2"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==3]  <- "Cluster 3"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==4]  <- "Cluster 4"  
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==5]  <- "Cluster 5"
   
   
   
@@ -477,7 +515,9 @@ runAnalysis <- function(df_full){
   #norm_weekday_df_internet_ag_sum$internet_traffic <- normalize(norm_weekday_df_internet_ag_sum$internet_traffic)
   #norm_weekend_df_internet_ag_sum$internet_traffic <- normalize(norm_weekend_df_internet_ag_sum$internet_traffic)
   plotHeatMap(norm_df_internet_ag_sum)
+  pdf("milano-heatmap-daytype.pdf")
   plotHeatMap2(norm_df_internet_ag_sum)
+  dev.off()
   #plotHeatMap(norm_weekend_df_internet_ag_sum)
   #plotHeatMap(norm_weekday_df_internet_ag_sum)
   write.csv(df_internet_ag_sum, file = "df_internet_ag_sum.csv")
@@ -485,9 +525,10 @@ runAnalysis <- function(df_full){
   #plotHeatMap(filter(df_internet_ag_sum, weekday==1))
   # Clustering
   df_internet_ag_sum_clustered <- applyKmeans(df_internet_ag_sum, nclusters, 4.1)
+  pdf("milano-clustered.pdf")
   p <- ggplot(df_internet_ag_sum_clustered, aes(x,y))
-  print(p + geom_point(aes(colour=cluster), size=4.1)  + labs(fill = "Cluster")+  scale_color_npg())#scale_color_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"))) ##scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
-  
+  print(p + geom_point(shape = 15, aes(colour=cluster), size=3.3) + coord_fixed(ratio = 1) + labs(colour = "Cluster")+ xlab("Square.x") + ylab("Square.y")+  scale_color_npg() + theme_bw())#scale_color_manual(values=c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3"))) ##scale_color_manual(values = c("#FC4E07", "#E7B800",  "#00AFBB", "#4E84C4", "#52854C")))# + scale_color_brewer(palette="Set2"))
+  dev.off()
   write.csv(df_internet_ag_sum_clustered, file = "df_internet_ag_sum_clustered.csv")
   
   # for(i in 0:1){
@@ -555,6 +596,14 @@ runAnalysis <- function(df_full){
   
   #write.csv(getSdPerTime(df_internet_full_clustered,nclusters), file = "milano_all-clusters-sd.csv")
   
+  
+  #write.csv(getSdPerTime(df_internet_full_clustered,nclusters), file = "fullmap_all-clusters-sd.csv")
+  df_internet_full_sum_clustered_sd <- data.frame(weekday=factor(),
+                                                  cluster=factor(),
+                                                  activity_time=factor(),
+                                                  internet_traffic=numeric(),
+                                                  internet_traffic_sd=numeric(),
+                                                  stringsAsFactors=FALSE)
   for(i in 1:nclusters){
     for (j in 0:1){
       df_act <- subset(filter(filter(df_internet_full_sum_clustered, weekday==j), cluster == i), select=c("activity_time","internet_traffic"))
@@ -562,10 +611,28 @@ runAnalysis <- function(df_full){
       df_act <- df_act[order(df_act$activity_time),]
       df_act <- df_act[,c(1,3,2)]
       colnames(df_act) <- c("activity_time","internet_traffic","internet_traffic_sd")
+      
+      
+      rows = data.frame(rep(j, nrow(df_act)), rep(i, nrow(df_act)), df_act$activity_time, df_act$internet_traffic, df_act$internet_traffic_sd)
+      
+      colnames(rows) <- c("weekday","cluster","activity_time","internet_traffic","internet_traffic_sd")
+      df_internet_full_sum_clustered_sd <- rbind(df_internet_full_sum_clustered_sd, rows)
       if(j == 0){
-        write.csv(df_act, file = paste("weekend-milano_cluster",i,".csv", sep=""))
+        # if (i == 1){
+        #   c = 3
+        # }else if(i == 2){
+        #   c = 1
+        # }else if(i == 3){
+        #   c = 5
+        # }else if(i ==4){
+        #   c = 2
+        # }else{
+        #   c = 4
+        # }
+        c = i
+        write.csv(df_act, file = paste("weekend-milano_cluster",c,".csv", sep=""))
       }else{
-        write.csv(df_act, file = paste("weekday-milano_cluster",i,".csv", sep=""))
+        write.csv(df_act, file = paste("weekday-milano_cluster",c,".csv", sep=""))
       }
       #write.csv(mean_sd <- aggregate(internet_traffic ~ activity_time, subset(filter(df_internet_full_clustered_norm, cluster == i), select=c("activity_time","internet_traffic")),  function(x) c(mean = mean(x), sd = sd(x))), file = paste("milano_cluster",i,"-summary.csv", sep=""))
       #write.csv(getSdPerTime(filter(df_internet_full_clustered_norm, cluster == i)), file = paste("milano_cluster",i,"-summary.csv", sep=""))
@@ -589,6 +656,29 @@ runAnalysis <- function(df_full){
   dev.off() 
   
   
+  
+  weekday.labs <- c("Weekend","Weekday")
+  names(weekday.labs) <- c(0,1)
+  df_internet_full_sum_clustered_sd$weekday = factor(df_internet_full_sum_clustered_sd$weekday, levels=c(1,0))
+  pdf( file = "milano-resume.pdf", width = 21, height = 6 )	# numbers are cm 
+  
+  print(ggplot(data=df_internet_full_sum_clustered_sd, aes(x=activity_time, y=internet_traffic)) +
+          geom_bar(stat="identity") +
+          xlab("Hour of day") + ylab("Internet traffic") +
+          facet_grid(cluster~weekday, labeller = labeller(weekday = weekday.labs))+theme_bw()+
+          geom_errorbar(aes(ymin=internet_traffic-internet_traffic_sd, ymax=internet_traffic+internet_traffic_sd), width=.2,
+                        position=position_dodge(.9)))
+  dev.off() 
+  
+  
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==1]  <- "Cluster 3"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==2]  <- "Cluster 1"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==3]  <- "Cluster 2"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==4]  <- "Cluster 5"
+  df_internet_full_sum_clustered_sd$cluster[df_internet_full_sum_clustered_sd$cluster==5]  <- "Cluster 4"
+  
+  
+  
 }
 
 
@@ -605,10 +695,10 @@ if(clean){
 
 #df_weekday_full <- read.csv("data/cleaned/week/weekday_cln_week.csv",sep=",",header=T)
 #runAnalysis(df_weekday_full)
-df_weekday <- read.csv("weekday_18-19-20-21-22_cln.csv",sep=",",header=T)
+df_weekday <- read.csv("data/cleaned/week/weekday_18-19-20-21-22_cln.csv",sep=",",header=T)
 df_weekday$weekday <- 1
 
-df_weekend <- read.csv("weekend-10-16-17-23-24_cln.csv",sep=",",header=T)
+df_weekend <- read.csv("data/cleaned/week/weekend-10-16-17-23-24_cln.csv",sep=",",header=T)
 df_weekend$weekday <- 0
 
 df_full <- rbind(df_weekday, df_weekend)
