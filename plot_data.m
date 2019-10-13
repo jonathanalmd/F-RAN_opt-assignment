@@ -11,11 +11,19 @@ simulation = ["milano", "weekday", "downtown", 1000;
               "fullmap", "weekend", "semiurban", 3000;
               "fullmap", "weekend", "rural", 9000;
             ];
+simulation = [
+              "milano", "weekday", "semiurban", 3000;
+              
+              "milano", "weekend", "semiurban", 3000;
+              
+            ];
+                
+
         
 run_simulation = 1;
-r = 40;
+r = 50;
 cost_income_global = zeros(4,2,r);
-for run_simulation = 1:6
+for run_simulation = 1:2
     for repeat = 1:r
         display(run_simulation);
         display(simulation(run_simulation,:));

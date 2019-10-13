@@ -13,9 +13,9 @@ classdef Scenario < handle
         %simulation_type = "urban" % fullmap: urban, semiurban, rural
         day_type; % weekday or weekend
         % 3 rows milano, 3 rows fullmap
-        cluster_cells = [1 1 5 5 1 5 5;
-                         5 3 5 3 5 3 5;
-                         5 5 3 4 5 3 4;
+        cluster_cells = [1 1 2 2 1 2 2;
+                         2 2 3 3 2 3 3;
+                         3 3 4 3 4 3 4;
                          1 1 2 2 1 2 2;
                          5 5 3 3 5 3 3;
                          3 4 4 4 4 4 4;

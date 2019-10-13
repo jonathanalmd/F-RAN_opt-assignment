@@ -5,6 +5,15 @@
 library(tidyverse)
 library(ggplot2)
 
+#Set dir
+set_wdir <- function(){
+  library(rstudioapi) 
+  current_path <- getActiveDocumentContext()$path 
+  setwd(dirname(current_path ))
+  print( getwd() )
+}
+
+set_wdir()
 # Functions
 get_df <- function(m_type, d_type, reg){
   # m_type = "milano"
@@ -22,30 +31,34 @@ get_df <- function(m_type, d_type, reg){
   
   for (file in files){
     df_unit <- read.csv(paste("data/",m_type,"/",d_type,"/",reg,"/",file,sep=""),header=F)
+    if (d_type == "weekend"){
+      day_type = 0
+    }else{
+      day_type = 1
+    }
+    row <- data.frame(df_unit[1,1], "mc", day_type, m_type, reg, "Night")
+    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
+    df <- rbind(df, row)
+    row <- data.frame(df_unit[2,1], "mc", day_type, m_type, reg, "Morning")
+    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
+    df <- rbind(df, row)
+    row <- data.frame(df_unit[3,1], "mc", day_type, m_type, reg, "Afternoon")
+    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
+    df <- rbind(df, row)
+    row <- data.frame(df_unit[4,1], "mc", day_type, m_type, reg, "Evening")
+    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
+    df <- rbind(df, row)
     
-    row <- data.frame(df_unit[1,1], "mc", d_type, m_type, reg, "night")
+    row <- data.frame(df_unit[1,2], "sc", day_type, m_type, reg, "Night")
     colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
     df <- rbind(df, row)
-    row <- data.frame(df_unit[2,1], "mc", d_type, m_type, reg, "morning")
+    row <- data.frame(df_unit[2,2], "sc", day_type, m_type, reg, "Morning")
     colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
     df <- rbind(df, row)
-    row <- data.frame(df_unit[3,1], "mc", d_type, m_type, reg, "afternoon")
+    row <- data.frame(df_unit[3,2], "sc", day_type, m_type, reg, "Afternoon")
     colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
     df <- rbind(df, row)
-    row <- data.frame(df_unit[4,1], "mc", d_type, m_type, reg, "evening")
-    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
-    df <- rbind(df, row)
-    
-    row <- data.frame(df_unit[1,2], "sc", d_type, m_type, reg, "night")
-    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
-    df <- rbind(df, row)
-    row <- data.frame(df_unit[2,2], "sc", d_type, m_type, reg, "morning")
-    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
-    df <- rbind(df, row)
-    row <- data.frame(df_unit[3,2], "sc", d_type, m_type, reg, "afternoon")
-    colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
-    df <- rbind(df, row)
-    row <- data.frame(df_unit[4,2], "sc", d_type, m_type, reg, "evening")
+    row <- data.frame(df_unit[4,2], "sc", day_type, m_type, reg, "Evening")
     colnames(row) <- c("prop","cell_type","day_type","map_type","region","day_part")
     df <- rbind(df, row)
   }
@@ -94,20 +107,72 @@ fullmap_df <- filter(total_df, map_type == "fullmap")
 pdf("week-milano-plots.pdf")
 
 
+# total_df$day_part[total_df$day_part=="night"] <- "Night"
+# total_df$day_part[total_df$day_part=="morning"] <- "Morning"
+# total_df$day_part[total_df$day_part=="afternoon"] <- "Afternoon"
+# total_df$day_part[total_df$day_part=="evening"] <- "Evening"
+# 
+# total_df$day_type[total_df$day_type=="Weekend"] <- "Weekend"
+# total_df$day_type[total_df$day_type=="Weekday"] <- "Weekday"
+# 
+# total_df$region[total_df$region=="downtown"] <- "Downtown"
+# total_df$region[total_df$region=="urban"] <- "Urban"
+# total_df$region[total_df$region=="semiurban"] <- "Suburban"
+# 
+# total_df$cell_type[total_df$cell_type=="mc"] <- "Macrocell"
+# total_df$cell_type[total_df$cell_type=="sc"] <- "Smallcell"
 
-ggplot(data=filter(total_df, map_type == "milano"), aes(x=day_part, y=prop, fill=cell_type)) +
+colnames(total_df) <- c("prop","RRH","day_type","map_type","region","day_part")
+
+day_type.labs <- c("Weekend","Weekday")
+names(day_type.labs) <- c(0,1)
+total_df$day_type <- factor(total_df$day_type, levels=c(1,0))
+
+region.labs <- c("Downtown", "Urban", "Suburban")
+names(region.labs) <- c("downtown", "urban", "semiurban")
+total_df$region <- factor(total_df$region, levels = c("downtown", "urban", "semiurban"))
+
+ggplot(data=filter(total_df, map_type == "milano"), aes(x=day_part, y=prop, fill=RRH)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
+  facet_grid(region~day_type, labeller = labeller(day_type = day_type.labs, region = region.labs)) +
+  theme_bw()
+
+
+ggplot(data=filter(total_df, map_type == "milano"), aes(x=day_part, y=prop, fill=RRH)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
+  facet_grid(region~day_type, labeller = labeller(day_type = day_type.labs, region = region.labs)) +
+  theme_bw()
+
+ggplot(data=filter(total_df, map_type == "milano" & day_part != "Night"), aes(x=day_part, y=prop, fill=Antenna)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
+  facet_grid(region~day_type, labeller = labeller(day_type = day_type.labs, region = region.labs)) +
+  theme_bw()
+
+
+
+# horizontal
+ggplot(data=filter(total_df, map_type == "milano"), aes(x=day_part, y=prop, fill=RRH)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
+  facet_grid(day_type~region, labeller = labeller(day_type = day_type.labs, region = region.labs)) +
+  theme_bw() +  theme(legend.position="bottom", legend.direction="horizontal", 
+                      legend.title = element_blank())
+
+
+
+
+
+
+
+  ggplot(data=filter(total_df, map_type == "milano" & day_part != "night"), aes(x=day_part, y=prop, fill=cell_type)) +
   geom_boxplot() +
   xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
   facet_grid(region~day_type) + 
   theme_bw()
-
-
-ggplot(data=filter(total_df, map_type == "milano" & day_part != "night"), aes(x=day_part, y=prop, fill=cell_type)) +
-  geom_boxplot() +
-  xlab("Part of day") + ylab("Maximum income / Cost of allocation") + 
-  facet_grid(region~day_type) + 
-  theme_bw()
-
+    
 
 ggplot(data=filter(total_df, map_type == "milano" & day_part == "night"), aes(x=day_part, y=prop, fill=cell_type)) +
   geom_boxplot() +
