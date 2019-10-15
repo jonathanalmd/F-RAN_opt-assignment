@@ -45,16 +45,14 @@ df_cln$Class <- as.factor(df_cln$Class)
 ggplot(df_cln, aes(x=Distance, y=Instances, group=Class)) +
   geom_line(aes(linetype=Class, colour = Class))+
   geom_point(aes(shape=Class, colour = Class)) +
-  geom_line(data=df_p, aes(x=Distance, y=Cost)) +
-  scale_y_continuous(sec.axis = sec_axis(~ . * 0.0425))+
   scale_color_npg() + theme_bw() + 
-  xlab("Distance (m)") + ylab("Number of allocated processors")
+  xlab("Distance (m)") + ylab("Number of allocated vBBUs")
 
 
 ggplot(df_cln, aes(x=Distance, y=Instances, group=Class)) +
   geom_line(aes(linetype=Class, colour = Class))+
   geom_point(aes(shape=Class, colour = Class)) +
-  geom_line(aes(y=Instances*0.0425*8)) +
+  geom_line(aes(y=0.0425/Distance)) +
   scale_y_continuous(sec.axis = sec_axis(~ . * 0.0425))+
   scale_color_npg() + theme_bw() + 
   xlab("Distance (m)") + ylab("Number of allocated processors")
