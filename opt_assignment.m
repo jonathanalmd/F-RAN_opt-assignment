@@ -88,9 +88,9 @@ function [vec, fval, answer, resume, n_ismt, output_a] = opt_assignment(scenario
                     b(ihead) = scenario.mdcs(s).vms(i).n_cores * 11; % * number of processors
                 else
                     if i == 0
-                        b(ihead) = scenario.mdcs(s).vms(i).n_cores * 46; % * number of processors
+                        b(ihead) = scenario.mdcs(s).vms(i).n_cores * 22; % * number of processors
                     else
-                        b(ihead) = scenario.mdcs(s).vms(i).n_cores * 26; % * number of processors
+                        b(ihead) = scenario.mdcs(s).vms(i).n_cores * 22; % * number of processors
                     end
                     
                 end
