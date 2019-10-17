@@ -11,19 +11,14 @@ simulation = ["milano", "weekday", "downtown", 1000;
               "fullmap", "weekend", "semiurban", 3000;
               "fullmap", "weekend", "rural", 9000;
             ];
-simulation = [
-              "milano", "weekday", "semiurban", 3000;
-              
-              "milano", "weekend", "semiurban", 3000;
-              
-            ];
+
                 
 
         
 run_simulation = 1;
 r = 50;
 cost_income_global = zeros(4,2,r);
-for run_simulation = 1:2
+for run_simulation = 1:6
     for repeat = 1:r
         display(run_simulation);
         display(simulation(run_simulation,:));
@@ -79,22 +74,19 @@ for run_simulation = 1:2
             for i = 1:I
                 for s = 1:S
                     if s < 8
-                        if set_simulation(3) == "downtown"
-                            n_procs = 12; % 14 -> 196 cores
+                        if i == 1
+                            n_procs = 11;
                         else
                             n_procs = 11;
                         end
-                        if i == 0 
-                            N_is = scenario.mdcs(s).vms(i).n_cores * n_procs;
-                        else
-                            N_is = scenario.mdcs(s).vms(i).n_cores * n_procs;
-                        end
+                        
+                        N_is = scenario.mdcs(s).vms(i).n_cores * n_procs;
                         available_cores_mc(ihead) = available_cores_mc(ihead) + N_is;
                     else
-                        if i == 0 % 22 -> 44 cores ; 44 -> 88 cores ; 46 -> 92 cores 
-                            N_is = scenario.mdcs(s).vms(i).n_cores * 22;
-                        else % 22 -> 88 cores ; 24 -> 96  ; 26 -> 104 cores
-                            N_is = scenario.mdcs(s).vms(i).n_cores * 22;
+                        if i == 1 
+                            N_is = scenario.mdcs(s).vms(i).n_cores * 7;
+                        else 
+                            N_is = scenario.mdcs(s).vms(i).n_cores * 7;
                         end                
                         available_cores_sc(ihead) = available_cores_sc(ihead) + N_is;
                     end
@@ -141,12 +133,14 @@ for run_simulation = 1:2
                                 if s <= scenario.n_sites
                                     mc_cost(ihead) = mc_cost(ihead) + cur_cost;
                                     mc_vms(i,ihead) = mc_vms(i,ihead) + n_ismt(i,s,m,t);
-                                    mc_cores(i,ihead) = mc_cores(i,ihead) + (n_ismt(i,s,m,t) * N_is);
+                                    used_cores = (n_ismt(i,s,m,t) * N_is);
+                                    mc_cores(i,ihead) = mc_cores(i,ihead) + used_cores;
 
                                 else
                                     sc_cost(ihead) = sc_cost(ihead) + cur_cost;
                                     sc_vms(i,ihead) = sc_vms(i,ihead) + n_ismt(i,s,m,t);
-                                    sc_cores(i,ihead) = sc_cores(i,ihead) + (n_ismt(i,s,m,t) * N_is);
+                                    used_cores = (n_ismt(i,s,m,t) * N_is);
+                                    sc_cores(i,ihead) = sc_cores(i,ihead) + used_cores;
 
                                 end 
 
@@ -164,7 +158,7 @@ for run_simulation = 1:2
             
             available_cores_mc(ihead) = available_cores_mc(ihead) - mc_cores(1,ihead); - mc_cores(2,ihead); %- mc_cores(3,ihead);
             available_cores_sc(ihead) = available_cores_sc(ihead) - sc_cores(1,ihead); - sc_cores(2,ihead); %- sc_cores(3,ihead);
-            available_cores(ihead) = available_cores(ihead) - available_cores_mc(ihead) - available_cores_sc(ihead);
+            %available_cores(ihead) = available_cores(ihead) - available_cores_mc(ihead) - available_cores_sc(ihead);
             ihead = ihead + 1; 
         end
 

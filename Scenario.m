@@ -14,8 +14,8 @@ classdef Scenario < handle
         day_type; % weekday or weekend
         % 3 rows milano, 3 rows fullmap
         cluster_cells = [1 1 2 2 1 2 2;
-                         2 2 3 3 2 3 3;
-                         3 3 4 3 4 3 4;
+                         1 2 3 2 3 2 3;
+                         2 4 3 4 3 3 3;
                          1 1 2 2 1 2 2;
                          5 5 3 3 5 3 3;
                          3 4 4 4 4 4 4;
@@ -191,8 +191,7 @@ classdef Scenario < handle
             obj.cluster_centers = reshape(obj.cluster_centers, obj.n_sites, obj.mc_clusters_per_site);
             
             % Number of operations for each bit
-            obj.W = obj.decoder_recursions * obj.decoder_instructions;
-            obj.W = 120;
+            obj.W = 200;
             
             %mi1 = 460;
             %sigma1 = 350;
@@ -405,11 +404,11 @@ classdef Scenario < handle
                     if workload + error < 0
                         workload = 0;
                         error = 0;
+                    %end
+                    elseif workload + error > 1
+                        workload = 1;
+                        error = 0;
                     end
-%                     elseif workload + error > 1
-%                         workload = 1;
-%                         error = 0;
-%                     end
                     
                     transmited_data_mt(m,t) = (workload + error) * antenna_uplink * scale;                    
                 end                
