@@ -113,23 +113,9 @@ for (map in maps){
 milano_df <- filter(total_df, map_type == "milano")
 fullmap_df <- filter(total_df, map_type == "fullmap")
 
-pdf("week-milano-plots.pdf")
+#pdf("week-milano-plots.pdf")
 
 
-# total_df$day_part[total_df$day_part=="night"] <- "Night"
-# total_df$day_part[total_df$day_part=="morning"] <- "Morning"
-# total_df$day_part[total_df$day_part=="afternoon"] <- "Afternoon"
-# total_df$day_part[total_df$day_part=="evening"] <- "Evening"
-# 
-# total_df$day_type[total_df$day_type=="Weekend"] <- "Weekend"
-# total_df$day_type[total_df$day_type=="Weekday"] <- "Weekday"
-# 
-# total_df$region[total_df$region=="downtown"] <- "Downtown"
-# total_df$region[total_df$region=="urban"] <- "Urban"
-# total_df$region[total_df$region=="semiurban"] <- "Suburban"
-# 
-# total_df$cell_type[total_df$cell_type=="mc"] <- "Macrocell"
-# total_df$cell_type[total_df$cell_type=="sc"] <- "Smallcell"
 
 colnames(total_df) <- c("prop","MDC","day_type","map_type","region","day_part")
 
@@ -142,6 +128,15 @@ names(region.labs) <- c("downtown", "urban", "semiurban")
 total_df$region <- factor(total_df$region, levels = c("downtown", "urban", "semiurban"))
 
 
+
+# horizontal
+
+ggplot(data=filter(total_df, map_type == "milano" & prop < 5), aes(x=day_part, y=prop, fill=MDC)) +
+  geom_boxplot() +
+  xlab("Part of day") + ylab("Maximum income / Cost of allocation") +
+  facet_grid(day_type~region, labeller = labeller(day_type = day_type.labs, region = region.labs)) +
+  theme_bw() #+   theme(legend.position="bottom", legend.direction="horizontal", 
+  #legend.title = element_blank())
 
 
 ggplot(data=filter(total_df, map_type == "milano"), aes(x=day_part, y=prop, fill=RRH)) +
@@ -164,15 +159,6 @@ ggplot(data=filter(total_df, map_type == "milano" & day_part != "Night"), aes(x=
   theme_bw()
 
 
-
-# horizontal
-
-ggplot(data=filter(total_df, map_type == "milano" & prop < 10), aes(x=day_part, y=prop, fill=MDC)) +
-  geom_boxplot() +
-  xlab("Part of day") + ylab("Maximum income / Cost of allocation") +
-  facet_grid(day_type~region, labeller = labeller(day_type = day_type.labs, region = region.labs)) +
-  theme_bw() #+   theme(legend.position="bottom", legend.direction="horizontal", 
-                      #legend.title = element_blank())
 
 # normalized
 # df_norm_weekday <- filter(total_df, map_type == "milano", day_type == 1)
@@ -695,30 +681,96 @@ t.test(filter(total_df, cell_type == "sc" & day_part != "night")$prop)$"conf.int
 
 
 
-# 17
 
 
-t.test(filter(milano_df, cell_type == "mc" & day_type == 1 & region == "downtown" & day_part == "Night")$prop)
+# < 0 
 t.test(filter(milano_df, cell_type == "mc" & day_type == 1 & region == "downtown" & day_part == "Morning")$prop)
 t.test(filter(milano_df, cell_type == "mc" & day_type == 1 & region == "downtown" & day_part == "Afternoon")$prop)
 t.test(filter(milano_df, cell_type == "mc" & day_type == 1 & region == "downtown" & day_part == "Evening")$prop)
 
-t.test(filter(filter(milano_df, prop < 15), cell_type == "mc" & day_type == 1 & region == "urban" & day_part == "Morning")$prop)
-t.test(filter(filter(milano_df, prop < 15), cell_type == "mc" & day_type == 1 & region == "urban" & day_part == "Afternoon")$prop)
+t.test(filter(milano_df, cell_type == "mc" & day_type == 1 & region == "urban" & day_part == "Morning")$prop)
+t.test(filter(milano_df, cell_type == "mc" & day_type == 1 & region == "urban" & day_part == "Afternoon")$prop)
 
 
-t.test(filter(filter(milano_df, prop < 15), cell_type == "mc" & day_type == 0 & region == "downtown" & day_part == "Afternoon")$prop)
+t.test(filter(milano_df, cell_type == "mc" & day_type == 0 & region == "downtown" & day_part == "Afternoon")$prop)
+t.test(filter(milano_df, cell_type == "mc" & day_type == 0 & region == "downtown" & day_part == "Evening")$prop)
+
+t.test(filter(milano_df, cell_type == "mc" & day_type == 0 & region == "urban" & day_part == "Afternoon")$prop)
+t.test(filter(milano_df, cell_type == "mc" & day_type == 0 & region == "urban" & day_part == "Evening")$prop)
+
+
+t.test(filter(milano_df, cell_type == "sc" & day_type == 1 & region == "downtown" & day_part == "Night")$prop)
 
 
 
-
+# relevant
 t.test(filter(milano_df, cell_type == "sc" & day_type == 1 & region == "downtown" & day_part == "Morning")$prop)
 t.test(filter(milano_df, cell_type == "sc" & day_type == 1 & region == "downtown" & day_part == "Afternoon")$prop)
+t.test(filter(milano_df, cell_type == "sc" & day_type == 1 & region == "downtown" & day_part == "Evening")$prop)
 
 t.test(filter(milano_df, cell_type == "sc" & day_type == 1 & region == "urban" & day_part == "Morning")$prop)
 t.test(filter(milano_df, cell_type == "sc" & day_type == 1 & region == "urban" & day_part == "Afternoon")$prop)
 
 
 t.test(filter(milano_df, cell_type == "sc" & day_type == 0 & region == "downtown" & day_part == "Afternoon")$prop)
+t.test(filter(milano_df, cell_type == "sc" & day_type == 0 & region == "downtown" & day_part == "Evening")$prop)
+
+t.test(filter(milano_df, cell_type == "sc" & day_type == 0 & region == "urban" & day_part == "Afternoon")$prop)
+t.test(filter(milano_df, cell_type == "sc" & day_type == 0 & region == "urban" & day_part == "Evening")$prop)
+
+
+# entire day
+t.test(filter(milano_df, cell_type == "mc" & region == "downtown" & day_type == 1)$prop)
+t.test(filter(milano_df, cell_type == "mc" & region == "downtown"  & day_type == 0)$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "downtown" & day_type == 1)$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "downtown"  & day_type == 0)$prop)
+
+
+t.test(filter(milano_df, cell_type == "mc" & region == "urban"  & day_type == 1)$prop)
+t.test(filter(milano_df, cell_type == "mc" & region == "urban"  & day_type == 0)$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "urban"  & day_type == 1)$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "urban"  & day_type == 0)$prop)
+
+
+
+t.test(filter(milano_df, cell_type == "mc" & region == "semiurban"  & day_type == 1)$prop)
+t.test(filter(milano_df, cell_type == "mc" & region == "semiurban"  & day_type == 0)$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "semiurban"  & day_type == 1)$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "semiurban"  & day_type == 0)$prop)
+
+
+
+
+# entire day ****
+t.test(filter(milano_df, cell_type == "mc" & region == "downtown")$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "downtown")$prop)
+
+t.test(filter(milano_df, cell_type == "mc" & region == "urban")$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "urban")$prop)
+
+t.test(filter(milano_df, cell_type == "mc" & region == "semiurban")$prop)
+t.test(filter(milano_df, cell_type == "sc" & region == "semiurban")$prop)
+
+
+
+
+# entire day
+t.test(filter(milano_df, region == "downtown"  & day_type == 1)$prop)
+t.test(filter(milano_df, region == "downtown"  & day_type == 0)$prop)
+
+
+t.test(filter(milano_df, region == "urban"  & day_type == 1)$prop)
+t.test(filter(milano_df, region == "urban"  & day_type == 0)$prop)
+
+
+t.test(filter(milano_df, region == "semiurban"  & day_type == 1)$prop)
+t.test(filter(milano_df, region == "semiurban"  & day_type == 0)$prop)
+
+
+
+
+
+
+
 
 
