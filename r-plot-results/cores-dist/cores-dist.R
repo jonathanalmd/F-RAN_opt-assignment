@@ -21,10 +21,10 @@ df_p <- read.csv("cost-dist.csv",sep=";",header=F)
 colnames(df) <- c("Instances","Class","Distance")
 colnames(df_p) <- c("Distance","Cost")
 
-cores1 <- 6
-cores2 <- 8
-cores3 <- 2
-cores4 <- 4
+cores1 <- 8
+cores2 <- 12
+cores3 <- 4
+cores4 <- 6
 
 dfc1 <- filter(df, Class == 1)
 dfc2 <- filter(df, Class == 2)
@@ -49,12 +49,12 @@ ggplot(df_cln, aes(x=Distance, y=Instances, group=Class)) +
   xlab("Distance (m)") + ylab("Number of allocated vBBUs")
 
 
-ggplot(df_cln, aes(x=Distance, y=Instances, group=Class)) +
-  geom_line(aes(linetype=Class, colour = Class))+
-  geom_point(aes(shape=Class, colour = Class)) +
-  geom_line(aes(y=0.0425/Distance)) +
-  scale_y_continuous(sec.axis = sec_axis(~ . * 0.0425))+
-  scale_color_npg() + theme_bw() + 
-  xlab("Distance (m)") + ylab("Number of allocated processors")
+# ggplot(df_cln, aes(x=Distance, y=Instances, group=Class)) +
+#   geom_line(aes(linetype=Class, colour = Class))+
+#   geom_point(aes(shape=Class, colour = Class)) +
+#   geom_line(aes(y=0.0425/Distance)) +
+#   scale_y_continuous(sec.axis = sec_axis(~ . * 0.0425))+
+#   scale_color_npg() + theme_bw() + 
+#   xlab("Distance (m)") + ylab("Number of allocated processors")
 
 
